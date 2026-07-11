@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', 'Hind Siliguri', sans-serif;
+    background-color: #f0f4f8; /* Neumorphic Soft Base Background */
+    color: #1e293b;
+    overflow-x: hidden;
+  }
+}
+
+/* ==========================================
+   Neumorphism (Soft UI) Custom Utilities
+========================================== */
+
+/* সাধারণ কার্ড (স্ক্রিন থেকে হালকা ভেসে থাকবে) */
+.neu-card {
+  background: #f0f4f8;
+  box-shadow: 8px 8px 18px #cbd5e1, -8px -8px 18px #ffffff;
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.neu-card:hover {
+  box-shadow: 12px 12px 24px #cbd5e1, -12px -12px 24px #ffffff;
+  transform: translateY(-4px);
+}
+
+/* বাটন (হোভার এবং ক্লিকে বাস্তব ৩ডি অনুভূতি দেবে) */
+.neu-btn {
+  background: #f0f4f8;
+  box-shadow: 5px 5px 10px #cbd5e1, -5px -5px 10px #ffffff;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  font-weight: 600;
+}
+.neu-btn:hover {
+  box-shadow: 3px 3px 6px #cbd5e1, -3px -3px 6px #ffffff;
+  transform: translateY(-2px);
+}
+.neu-btn:active, .neu-pressed {
+  background: #f0f4f8;
+  box-shadow: inset 4px 4px 8px #cbd5e1, inset -4px -4px 8px #ffffff;
+  transform: translateY(1px);
+}
+
+/* ইনসেট বক্স (ইনপুট বা ভেতরের প্রোগ্রেস বারের জন্য দেবে থাকা অংশ) */
+.neu-inset {
+  background: #f0f4f8;
+  box-shadow: inset 4px 4px 8px #cbd5e1, inset -4px -4px 8px #ffffff;
+  border-radius: 1rem;
+}
+
+/* প্রাইমারি গ্লো বাটন (আধুনিক গ্রেডিয়েন্ট + শ্যাডো) */
+.btn-glow {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: white;
+  box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+  transition: all 0.3s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.6);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* ==========================================
+   Custom Motion & Floating Animations
+========================================== */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+}
+.animate-float-fast {
+  animation: float-fast 3s ease-in-out infinite;
+}
