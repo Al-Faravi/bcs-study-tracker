@@ -1,0 +1,6 @@
+bcs-study-tracker :
+
+Mongo :
+alfaravi17_db_user   2chc4KeYR2LS1GQP
+
+mongodb+srv://alfaravi17_db_user:2chc4KeYR2LS1GQP@cluster0.yhlxsgv.mongodb.net/?appName=Cluster0

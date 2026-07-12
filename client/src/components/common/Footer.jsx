@@ -12,12 +12,13 @@ const Footer = () => {
           
           {/* ক্লিন ব্র্যান্ড সেকশন */}
           <div className="lg:col-span-2 space-y-6">
+            
+            {/* লোগো ও ব্র্যান্ড নেম (SaaS-Grade Glow Badge) */}
             <Link to="/" className="flex items-center gap-3 group w-fit">
-              <img 
-                src="/logo.png" 
-                alt="BCS Tracker Logo" 
-                className="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-105" 
-              />
+              {/* আপনার দেওয়া B ব্যাজ (ডায়নামিক কালারের জন্য bg-primary যোগ করা হয়েছে, btn-glow থাকলে কাজ করবে) */}
+              <div className="w-12 h-12 rounded-xl btn-glow bg-primary shadow-lg shadow-primary/30 flex items-center justify-center text-primary-content font-extrabold text-2xl group-hover:scale-105 transition-transform duration-300">
+                B
+              </div>
               <div className="flex flex-col">
                 <h2 className="text-2xl font-bold tracking-tight text-primary">BCS Tracker</h2>
                 <p className="text-[11px] font-semibold tracking-widest uppercase text-base-content/60">
@@ -27,7 +28,7 @@ const Footer = () => {
             </Link>
             
             <p className="text-sm text-base-content/70 leading-relaxed max-w-sm">
-              বাংলাদেশের চাকরিপ্রার্থীদের জন্য তৈরি প্রথম পিয়ার-টু-পিয়ার স্টাডি ট্র্যাকিং প্ল্যাটফর্ম। একসাথে শিখুন, নিজেকে ছাড়িয়ে যান।
+              বাংলাদেশের চাকরিপ্রার্থীদের জন্য তৈরি প্রথম পিয়ার-টু-পিয়ার স্টাডি ট্র্যাকিং প্ল্যাটফর্ম। একসাথে শিখুন, নিজেকে ছাড়িয়ে যান।
             </p>
 
             {/* সোশ্যাল লিংকস */}
@@ -92,24 +93,36 @@ const Footer = () => {
         </div>
 
         {/* বটম কপিরাইট ও সিগনেচার সেকশন */}
-        <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-base-content/70">
-          <div>
+        <div className="pt-10 flex flex-col md:flex-row justify-between items-center md:items-end gap-8 text-sm text-base-content/70">
+          
+          <div className="order-2 md:order-1 mb-2">
             &copy; {new Date().getFullYear()} BCS Tracker. All rights reserved.
           </div>
           
-          <div className="flex items-center gap-1.5">
-            <span>Designed & Developed with</span>
-            <Heart className="w-4 h-4 text-error fill-current animate-pulse" />
-            <span>by</span>
-            <a 
-              href="https://www.linkedin.com/in/md-shakawat-hossain-faravi/" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="font-bold text-primary hover:underline"
-            >
-              MD. Shakawat Hossain Faravi
-            </a>
+          {/* ডেভেলপার সিগনেচার এবং পার্সোনাল লোগো */}
+          <div className="order-1 md:order-2 flex flex-col items-center md:items-end gap-3">
+            {/* আপনার AlFaravi লোগোটি এখানে কোনো বক্স ছাড়াই বড় করে রাখা হয়েছে */}
+            <img 
+              src="/logo.png" 
+              alt="AlFaravi Brand" 
+              className="h-16 w-auto object-contain" 
+            />
+            
+            <div className="flex items-center gap-1.5 mt-1">
+              <span>Crafted with</span>
+              <Heart className="w-4 h-4 text-error fill-current animate-pulse" />
+              <span>by</span>
+              <a 
+                href="https://www.linkedin.com/in/md-shakawat-hossain-faravi/" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="font-bold text-primary hover:underline"
+              >
+                MD. Shakawat Hossain Faravi
+              </a>
+            </div>
           </div>
+
         </div>
         
       </div>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, Building, Calendar, Camera, ArrowRight, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Building, Calendar, Camera, ArrowRight, ShieldCheck, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import useAuthStore from '../store/useAuthStore';
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { signup, isLoading } = useAuthStore();
 
   // ফর্ম ফিল্ড স্টেট
   const [name, setName] = useState('');
@@ -18,7 +20,7 @@ const SignupPage = () => {
   const [profilePic, setProfilePic] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
 
-  // পাসওয়ার্ড টগল ও এরর স্টেট
+  // পাসওয়ার্ড টগল ও এরর স্টেট
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -31,12 +33,12 @@ const SignupPage = () => {
     }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
     if (password !== confirmPassword) {
-      setErrorMsg('পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না। অনুগ্রহ করে পুনরায় যাচাই করুন।');
+      setErrorMsg('পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মিলছে না। অনুগ্রহ করে পুনরায় যাচাই করুন।');
       return;
     }
 
@@ -45,23 +47,37 @@ const SignupPage = () => {
       return;
     }
 
-    const newUserData = {
-      name,
-      email,
+    // ব্যাকএন্ডে সাইনআপ রিকোয়েস্ট পাঠানো হচ্ছে
+    const result = await signup(name, email, password, {
       gender,
       dob,
       institution,
       profilePicName: profilePic ? profilePic.name : 'Default Avatar'
-    };
+    });
 
-    console.log("Registering formal user:", newUserData);
-    alert("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
-    navigate('/groups');
+    if (result.success) {
+      alert("অভিনন্দন! আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
+      navigate('/login');
+    } else {
+      setErrorMsg(result.message);
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f0f4f8] flex justify-center items-center px-4 py-12">
-      <div className="w-full max-w-2xl neu-card p-6 sm:p-10 border border-white/80 relative overflow-hidden">
+    /* fixed inset-0 z-50 ব্যবহার করা হয়েছে যাতে Navbar ও Footer এর উপরে ফুলস্ক্রিন দেখায় */
+    <div className="fixed inset-0 z-50 bg-[#f0f4f8] overflow-y-auto flex justify-center items-center px-4 py-12">
+      
+      {/* ল্যান্ডিং পেজে ফিরে যাওয়ার ফ্লোটিং বাটন */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 p-3 rounded-2xl neu-btn text-slate-600 hover:text-indigo-600 flex items-center gap-2 text-xs sm:text-sm font-bold transition-all z-10 group"
+        title="হোমপেজে ফিরে যান"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        <span className="hidden sm:inline">হোমে ফিরে যান</span>
+      </Link>
+
+      <div className="w-full max-w-2xl neu-card p-6 sm:p-10 border border-white/80 relative my-auto">
         
         {/* ফরমাল হেডার সেকশন */}
         <div className="text-center space-y-1.5 mb-8 border-b border-slate-200/60 pb-6">
@@ -69,7 +85,7 @@ const SignupPage = () => {
             নতুন শিক্ষার্থী নিবন্ধন
           </h1>
           <p className="text-xs sm:text-sm font-medium text-slate-500">
-            বিসিএস ও পেশাগত ক্যারিয়ার প্রস্তুতির এক্সক্লুসিভ স্টাডি পোর্টালে যুক্ত হোন
+            বিসিএস ও পেশাগত ক্যারিয়ার প্রস্তুতির এক্সক্লুসিভ স্টাডি পোর্টালে যুক্ত হোন
           </p>
         </div>
 
@@ -117,7 +133,7 @@ const SignupPage = () => {
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-bold text-slate-800 block">প্রোফাইল ছবি যুক্ত করুন</span>
-                <p className="text-[11px] text-slate-500 leading-normal">পাসপোর্ট সাইজ বা প্রফেশনাল ছবি ব্যবহার করার পরামর্শ দেওয়া হচ্ছে। (ফরম্যাট: JPG, PNG)</p>
+                <p className="text-[11px] text-slate-500 leading-normal">পাসপোর্ট সাইজ বা প্রফেশনাল ছবি ব্যবহার করার পরামর্শ দেওয়া হচ্ছে। (ফরম্যাট: JPG, PNG)</p>
               </div>
             </div>
 
@@ -216,7 +232,7 @@ const SignupPage = () => {
                 />
               </div>
 
-              {/* পাসওয়ার্ড */}
+              {/* পাসওয়ার্ড */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-indigo-600" />
@@ -241,7 +257,7 @@ const SignupPage = () => {
                 </div>
               </div>
 
-              {/* কনফার্ম পাসওয়ার্ড */}
+              {/* কনফার্ম পাসওয়ার্ড */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
@@ -281,10 +297,20 @@ const SignupPage = () => {
           <div className="pt-4">
             <button 
               type="submit" 
-              className="w-full py-4 rounded-xl btn-glow font-bold text-sm flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+              disabled={isLoading}
+              className="w-full py-4 rounded-xl btn-glow font-bold text-sm flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50"
             >
-              <span>নিবন্ধন সম্পন্ন করুন</span>
-              <ArrowRight className="w-4 h-4" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>নিবন্ধন সম্পন্ন হচ্ছে...</span>
+                </>
+              ) : (
+                <>
+                  <span>নিবন্ধন সম্পন্ন করুন</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -292,7 +318,7 @@ const SignupPage = () => {
         {/* ফুটার লিংক */}
         <div className="mt-8 pt-6 border-t border-slate-200/60 text-center">
           <p className="text-xs font-medium text-slate-500">
-            ইতিমধ্যেই নিবন্ধিত সদস্য?{' '}
+              ইতিমধ্যেই নিবন্ধিত সদস্য?{' '}
             <Link to="/login" className="text-indigo-600 font-bold hover:underline">
               অ্যাকাউন্টে প্রবেশ করুন
             </Link>
