@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { registerUser, loginUser, getCurrentUser } from '../api/authApi';
+// axiosInstance ইম্পোর্ট করা হয়েছে (আপনার প্রোজেক্টের সঠিক পাথ অনুযায়ী মিলিয়ে নিন, যেমন: '../api/axios' হতে পারে)
+import axiosInstance from '../api/axiosInstance'; 
 
 // লগইন বা চেক-অথ এর সময় ইউজারের ছবি না থাকলে অটোমেটিক তৈরি হবে
 const processUser = (userData) => {
@@ -74,9 +76,31 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  // ৪. লগআউট অ্যাকশন
+  // ৪. প্রোফাইল আপডেট ফাংশন (নতুন যুক্ত করা হলো)
+  updateProfile: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.put('/auth/profile', userData);
+      
+      // processUser ব্যবহার করে ডেটা ফরম্যাট করা হলো যেন ডিফল্ট ছবির লজিক কাজ করে
+      const updatedUser = processUser(response.data.user);
+
+      // লোকাল স্টোরেজ ও স্টেট আপডেট করা হচ্ছে
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      set({ user: updatedUser, isLoading: false });
+      
+      return { success: true, message: response.data.message };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'প্রোফাইল আপডেট ব্যর্থ হয়েছে!';
+      set({ isLoading: false, error: errorMsg });
+      return { success: false, message: errorMsg };
+    }
+  },
+
+  // ৫. লগআউট অ্যাকশন
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // লগআউটের সময় ইউজার ডেটাও মুছে দেওয়া ভালো
     set({ user: null, token: null });
   },
 }));

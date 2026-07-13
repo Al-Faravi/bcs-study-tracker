@@ -1,15 +1,15 @@
-// একদম সঠিক এবং নিরাপদ ইম্পোর্ট লিস্ট:
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   Users, BookOpen, CheckCircle2, Circle, Clock, ShieldCheck, 
   UserCheck, UserX, AlertCircle, Loader2, ArrowLeft, MessageSquare, 
-  Target, Award, Lock, Globe, FileText, BarChart2 
+  Target, Award, Lock, Globe, FileText, BarChart2, X, Minimize2, Maximize2, Sparkles 
 } from 'lucide-react';
 import useGroupStore from '../store/useGroupStore';
 import useAuthStore from '../store/useAuthStore';
 import ResourceHub from '../components/groups/ResourceHub';
 import GroupAnalytics from '../components/groups/GroupAnalytics';
+import GroupChatRoom from '../components/groups/GroupChatRoom';
 
 const GroupDashboard = () => {
   const { groupId } = useParams();
@@ -19,12 +19,16 @@ const GroupDashboard = () => {
   // ট্যাব নেভিগেশন স্টেট
   const [activeTab, setActiveTab] = useState('overview');
 
-  // ডেমো স্টাডি টার্গেট (পরবর্তীতে ব্যাকএন্ড থেকে আসবে)
+  // স্মার্ট চ্যাট উইজেট স্টেট (WhatsApp/Messenger Style)
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatMinimized, setIsChatMinimized] = useState(false);
+
+  // ডেমো স্টাডি টার্গেট
   const [targets, setTargets] = useState([
     { id: 1, title: 'বাংলা সাহিত্য: প্রাচীন ও মধ্যযুগ রিভিশন', completed: true },
     { id: 2, title: 'ইংরেজি ব্যাকরণ: Subject-Verb Agreement প্র্যাকটিস', completed: false },
     { id: 3, title: 'গণিত: শতকরা ও লাভ-ক্ষতি বিগত সালের প্রশ্ন সমাধান', completed: false },
-    { id: 4, title: 'দৈনিক সাধারণ জ্ঞান (সাম্প্রতিক বিষয়াবলী) পড়া', completed: true },
+    { id: 4, title: 'দৈনিক সাধারণ জ্ঞান (সাম্প্রতিক বিষয়াবলী) পড়া', completed: true },
   ]);
 
   useEffect(() => {
@@ -33,18 +37,16 @@ const GroupDashboard = () => {
     }
   }, [groupId, loadGroupById]);
 
-  // টার্গেট কমপ্লিট টগল করার ফাংশন
   const toggleTarget = (id) => {
     setTargets(targets.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   };
 
-  // মেম্বার রিকোয়েস্ট অ্যাকসেপ্ট/রিজেক্ট হ্যান্ডলার
   const onHandleRequest = async (userId, action) => {
     const result = await handleMemberRequest(groupId, userId, action);
     alert(result.message);
   };
 
-  // ১. যতক্ষণ ডেটা লোড হচ্ছে অথবা currentGroup খালি আছে, ততক্ষণ লোডার দেখাবে
+  // ১. লোডিং স্টেট
   if (isLoading || !currentGroup) {
     if (error) {
       return (
@@ -69,13 +71,13 @@ const GroupDashboard = () => {
     );
   }
 
-  // ২. নির্ভুল অ্যাডমিন চেক (id এবং _id উভয়ই সাপোর্ট করবে)
+  // নির্ভুল অ্যাডমিন চেক
   const currentUserId = user?._id || user?.id;
   const adminId = currentGroup.admin?._id || currentGroup.admin;
   const isAdmin = adminId?.toString() === currentUserId?.toString();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative">
       
       {/* টপ নেভিগেশন ও ব্যাক বাটন */}
       <div className="flex items-center justify-between">
@@ -100,7 +102,7 @@ const GroupDashboard = () => {
         <div className="space-y-2 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2 text-xs font-bold text-emerald-600">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>সক্রিয় স্টাডি সেশন চলছে</span>
+            <span>সক্রিয় স্টাডি সেশন চলছে</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{currentGroup.name}</h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl leading-relaxed">{currentGroup.description}</p>
@@ -111,14 +113,18 @@ const GroupDashboard = () => {
           </div>
         </div>
 
-        {/* চ্যাট ও ডিসকাশন বাটন (ফিউচার ফিচার) */}
+        {/* স্মার্ট চ্যাট টগল বাটন (হেডার থেকে ওপেন হবে) */}
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <button 
-            onClick={() => alert('লাইভ গ্রুপ চ্যাট এবং ভয়েস রুম ফিচারটি খুব শীঘ্রই আসছে!')}
-            className="px-6 py-3.5 rounded-2xl btn-glow font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg hover:scale-105 transition-all"
+            onClick={() => { setIsChatOpen(true); setIsChatMinimized(false); }}
+            className="px-6 py-3.5 rounded-2xl btn-glow font-bold text-sm text-white flex items-center justify-center gap-2 shadow-lg hover:scale-105 transition-all relative group"
           >
             <MessageSquare className="w-4 h-4" />
-            <span>গ্রুপ চ্যাট রুম</span>
+            <span>গ্রুপ চ্যাট খুলুন</span>
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
           </button>
         </div>
       </div>
@@ -132,7 +138,7 @@ const GroupDashboard = () => {
           }`}
         >
           <BookOpen className="w-3.5 h-3.5 inline mr-1.5" />
-          <span>ওভারভিউ ও নিয়মাবলী</span>
+          <span>ওভারভিউ ও নিয়মাবলী</span>
         </button>
         <button
           onClick={() => setActiveTab('syllabus')}
@@ -144,6 +150,24 @@ const GroupDashboard = () => {
           <span>দৈনিক টার্গেট ও সিলেবাস</span>
         </button>
         <button
+          onClick={() => setActiveTab('resources')}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'resources' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5 inline mr-1.5" />
+          <span>রিসোর্স ও বই (Books & YouTube)</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <BarChart2 className="w-3.5 h-3.5 inline mr-1.5" />
+          <span>অ্যানালিটিক্স ও চার্ট</span>
+        </button>
+        <button
           onClick={() => setActiveTab('members')}
           className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'members' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
@@ -153,29 +177,6 @@ const GroupDashboard = () => {
           <span>সদস্যবৃন্দ ({currentGroup.members?.length || 0})</span>
         </button>
 
-        {/* নতুন রিসোর্স ও বই ট্যাব */}
-        <button
-          onClick={() => setActiveTab('resources')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'resources' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 inline mr-1.5" />
-          <span>রিসোর্স ও বই (Books & YouTube)</span>
-        </button>
-
-        {/* নতুন অ্যানালিটিক্স ও চার্ট ট্যাব */}
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <BarChart2 className="w-3.5 h-3.5 inline mr-1.5" />
-          <span>অ্যানালিটিক্স ও চার্ট (Analytics)</span>
-        </button>
-
-        {/* অ্যাডমিন প্যানেল ট্যাব (শুধুমাত্র অ্যাডমিন দেখতে পাবে) */}
         {isAdmin && (
           <button
             onClick={() => setActiveTab('requests')}
@@ -184,7 +185,7 @@ const GroupDashboard = () => {
             }`}
           >
             <Clock className="w-3.5 h-3.5 inline mr-1.5" />
-            <span>জয়েন রিকোয়েস্ট</span>
+            <span>জয়েন রিকোয়েস্ট</span>
             {currentGroup.joinRequests?.length > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-extrabold animate-bounce">
                 {currentGroup.joinRequests.length}
@@ -194,7 +195,7 @@ const GroupDashboard = () => {
         )}
       </div>
 
-      {/* ================= ট্যাব কন্টেন্ট এরিয়া ================= */}
+      {/* ================= ট্যাব কন্টেন্ট এরিয়া ================= */}
       
       {/* ১. ওভারভিউ ট্যাব */}
       {activeTab === 'overview' && (
@@ -202,10 +203,10 @@ const GroupDashboard = () => {
           <div className="md:col-span-2 neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
             <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-200/60 pb-3">গ্রুপের লক্ষ্য ও গাইডলাইন</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              এই স্টাডি গ্রুপটি তৈরি করা হয়েছে নিয়মিত পড়াশোনা ট্র্যাক করার জন্য। প্রতিদিন সকালে আমাদের টার্গেট সেট করা হবে এবং রাতে প্রত্যেকে নিজের অগ্রগতি শেয়ার করব।
+              এই স্টাডি গ্রুপটি তৈরি করা হয়েছে নিয়মিত পড়াশোনা ট্র্যাক করার জন্য। প্রতিদিন সকালে আমাদের টার্গেট সেট করা হবে এবং রাতে প্রত্যেকে নিজের অগ্রগতি শেয়ার করব।
             </p>
             <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">গ্রুপের নিয়মাবলী:</h4>
+              <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">গ্রুপের নিয়মাবলী:</h4>
               <ul className="space-y-2 text-xs text-slate-600 font-medium">
                 {currentGroup.rules && currentGroup.rules.length > 0 ? (
                   currentGroup.rules.map((rule, idx) => (
@@ -216,8 +217,8 @@ const GroupDashboard = () => {
                   ))
                 ) : (
                   <>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> প্রতিদিন অন্তত ৪ ঘণ্টা পড়াশোনা নিশ্চিত করা।</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কুইজ ও মক টেস্টে সক্রিয় অংশগ্রহণ করা।</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> প্রতিদিন অন্তত ৪ ঘণ্টা পড়াশোনা নিশ্চিত করা।</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কুইজ ও মক টেস্টে সক্রিয় অংশগ্রহণ করা।</li>
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কোনো সদস্যকে ব্যক্তিগত আক্রমণ বা স্প্যামিং না করা।</li>
                   </>
                 )}
@@ -232,15 +233,15 @@ const GroupDashboard = () => {
             </h3>
             <div className="space-y-3 text-xs font-semibold text-slate-600">
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>গ্রুপ তৈরি হয়েছে:</span>
+                <span>গ্রুপ তৈরি হয়েছে:</span>
                 <span className="font-extrabold text-slate-800">{new Date(currentGroup.createdAt).toLocaleDateString('bn-BD')}</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>মোট পড়ার টার্গেট:</span>
+                <span>মোট পড়ার টার্গেট:</span>
                 <span className="font-extrabold text-indigo-600">২৪ টি টপিক</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>গড় উপস্থিতি:</span>
+                <span>গড় উপস্থিতি:</span>
                 <span className="font-extrabold text-emerald-600">৯২%</span>
               </div>
             </div>
@@ -253,8 +254,8 @@ const GroupDashboard = () => {
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="flex justify-between items-center border-b border-slate-200/60 pb-4">
             <div>
-              <h3 className="font-extrabold text-lg text-slate-800">আজকের পড়ার টার্গেট (Daily Checklists)</h3>
-              <p className="text-xs text-slate-500">আপনার সম্পন্ন হওয়া টপিকগুলোতে টিক দিন এবং প্রস্তুতি এগিয়ে নিন</p>
+              <h3 className="font-extrabold text-lg text-slate-800">আজকের পড়ার টার্গেট (Daily Checklists)</h3>
+              <p className="text-xs text-slate-500">আপনার সম্পন্ন হওয়া টপিকগুলোতে টিক দিন এবং প্রস্তুতি এগিয়ে নিন</p>
             </div>
             <span className="px-3 py-1 rounded-full neu-inset text-xs font-extrabold text-indigo-600">
               {targets.filter(t => t.completed).length} / {targets.length} সম্পন্ন
@@ -291,7 +292,21 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ৩. সদস্য তালিকা ট্যাব */}
+      {/* ৩. রিসোর্স ও বই ট্যাব */}
+      {activeTab === 'resources' && (
+        <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
+          <ResourceHub isAdmin={isAdmin} currentUserId={currentUserId} />
+        </div>
+      )}
+
+      {/* ৪. অ্যানালিটিক্স ও চার্ট ট্যাব */}
+      {activeTab === 'analytics' && (
+        <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
+          <GroupAnalytics members={currentGroup.members} />
+        </div>
+      )}
+
+      {/* ৫. সদস্য তালিকা ট্যাব */}
       {activeTab === 'members' && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <h3 className="font-extrabold text-lg text-slate-800 border-b border-slate-200/60 pb-4">
@@ -321,18 +336,18 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ৪. জয়েন রিকোয়েস্ট ট্যাব (শুধুমাত্র অ্যাডমিনের জন্য) */}
+      {/* ৬. জয়েন রিকোয়েস্ট ট্যাব (শুধুমাত্র অ্যাডমিনের জন্য) */}
       {activeTab === 'requests' && isAdmin && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="border-b border-slate-200/60 pb-4">
-            <h3 className="font-extrabold text-lg text-slate-800">অপেক্ষমাণ সদস্য রিকোয়েস্ট</h3>
-            <p className="text-xs text-slate-500">যে সকল শিক্ষার্থীরা আপনার গ্রুপে যুক্ত হওয়ার জন্য আবেদন করেছে</p>
+            <h3 className="font-extrabold text-lg text-slate-800">অপেক্ষমাণ সদস্য রিকোয়েস্ট</h3>
+            <p className="text-xs text-slate-500">যে সকল শিক্ষার্থীরা আপনার গ্রুপে যুক্ত হওয়ার জন্য আবেদন করেছে</p>
           </div>
 
           {currentGroup.joinRequests?.length === 0 ? (
             <div className="py-12 text-center space-y-2">
               <UserCheck className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="text-xs font-bold text-slate-500">এই মুহূর্তে কোনো অপেক্ষমাণ জয়েন রিকোয়েস্ট নেই।</p>
+              <p className="text-xs font-bold text-slate-500">এই মুহূর্তে কোনো অপেক্ষমাণ জয়েন রিকোয়েস্ট নেই।</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -352,7 +367,6 @@ const GroupDashboard = () => {
                     </div>
                   </div>
 
-                  {/* অ্যাকশন বাটনসমূহ */}
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <button
                       onClick={() => onHandleRequest(reqUser._id, 'accept')}
@@ -376,17 +390,74 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ৫. রিসোর্স ও বই ট্যাব */}
-      {activeTab === 'resources' && (
-        <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
-          <ResourceHub isAdmin={isAdmin} currentUserId={user?._id || user?.id} />
+
+      {/* ========================================================================= */}
+      {/* ================= SMART FLOATING CHAT WIDGET (WHATSAPP STYLE) ============= */}
+      {/* ========================================================================= */}
+
+      {/* ১. নিচের ডানকোণায় ভাসমান চ্যাট বাটন (Floating Action Button - FAB) */}
+      {!isChatOpen && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="p-4 sm:px-6 sm:py-4 rounded-full btn-glow text-white shadow-2xl flex items-center gap-2.5 hover:scale-110 transition-all duration-300 group"
+            title="লাইভ স্টাডি চ্যাট রুম খুলুন"
+          >
+            <MessageSquare className="w-6 h-6 animate-bounce" />
+            <span className="font-extrabold text-sm hidden sm:inline">গ্রুপ চ্যাট</span>
+            <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-white absolute top-1 right-1 sm:top-2 sm:right-2 animate-ping"></span>
+          </button>
         </div>
       )}
 
-      {/* ৬. অ্যানালিটিক্স ও চার্ট ট্যাব */}
-      {activeTab === 'analytics' && (
-        <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
-          <GroupAnalytics members={currentGroup.members} />
+      {/* ২. চ্যাট উইজেট কন্টেইনার (মিনিমাইজ ও ম্যাক্সিমাইজ সাপোর্ট সহ) */}
+      {isChatOpen && (
+        <div className={`fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-[420px] z-50 transition-all duration-300 shadow-2xl ${
+          isChatMinimized ? 'h-14 sm:rounded-2xl overflow-hidden' : 'h-[100vh] sm:h-[620px] sm:rounded-3xl'
+        } neu-card border border-white/90 bg-white/80 backdrop-blur-xl flex flex-col`}>
+          
+          {/* উইজেট টপ হেডার বার */}
+          <div className="p-3.5 sm:p-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white flex items-center justify-between shadow-md cursor-pointer select-none"
+               onClick={() => setIsChatMinimized(!isChatMinimized)}>
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <div>
+                <h4 className="font-extrabold text-xs sm:text-sm flex items-center gap-1.5">
+                  <span>লাইভ স্টাডি চ্যাট</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                </h4>
+                <span className="text-[10px] text-indigo-100 font-medium block leading-none">
+                  {currentGroup.name}
+                </span>
+              </div>
+            </div>
+
+            {/* কন্ট্রোল বাটনসমূহ (Minimize & Close) */}
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => setIsChatMinimized(!isChatMinimized)}
+                className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-all"
+                title={isChatMinimized ? "বড় করুন" : "ছোট করুন"}
+              >
+                {isChatMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              </button>
+              <button 
+                onClick={() => setIsChatOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-rose-500 text-white transition-all"
+                title="চ্যাট বন্ধ করুন"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* উইজেট বডি (মিনিমাইজ করা না থাকলে কেবল চ্যাট রুম রেন্ডার হবে) */}
+          {!isChatMinimized && (
+            <div className="flex-grow overflow-hidden flex flex-col bg-[#f8fafc]/90">
+              <GroupChatRoom groupId={groupId} currentUser={user} />
+            </div>
+          )}
+
         </div>
       )}
 

@@ -1,351 +1,373 @@
-import React, { useState } from 'react';
-import { Briefcase, Building2, Calendar, Users, ExternalLink, CheckCircle2, Clock, Plus, Trash2, RotateCcw, AlertCircle, Filter } from 'lucide-react';
-
-const initialJobs = [
-  {
-    id: 1,
-    title: "৪৬তম বিসিএস (নন-ক্যাডার পদসহ) নন-টেকনিক্যাল",
-    organization: "বাংলাদেশ সরকারী কর্ম কমিশন (BPSC)",
-    category: "Government / BCS",
-    deadline: "2026-08-15",
-    circularLink: "https://bpsc.gov.bd",
-    posts: "৩,১৪০ জন",
-    status: "new"
-  },
-  {
-    id: 2,
-    title: "অফিসার (জেনারেল) - সম্মিলিত ৯ ব্যাংক ও আর্থিক প্রতিষ্ঠান",
-    organization: "ব্যাংকার্স সিলেকশন কমিটি সচিবালয় (BSCS)",
-    category: "Bank / Financial",
-    deadline: "2026-07-25",
-    circularLink: "https://erecruitment.bb.org.bd",
-    posts: "১,০২৬ জন",
-    status: "new"
-  },
-  {
-    id: 3,
-    title: "সহকারী পরিচালক (AD) - সাধারণ শাখা",
-    organization: "দুদক (Anti-Corruption Commission)",
-    category: "Government",
-    deadline: "2026-07-14",
-    circularLink: "#",
-    posts: "২৮ জন",
-    status: "new"
-  },
-  {
-    id: 4,
-    title: "প্রভাষক (তথ্য ও যোগাযোগ প্রযুক্তি / কম্পিউটার বিজ্ঞান)",
-    organization: "বেসরকারি শিক্ষক নিবন্ধন ও প্রত্যয়ন কর্তৃপক্ষ (NTRCA)",
-    category: "Education / Teaching",
-    deadline: "2026-06-30",
-    circularLink: "#",
-    posts: "৪৫০ জন",
-    status: "new"
-  }
-];
+import React, { useEffect, useState } from 'react';
+import { Briefcase, Search, Filter, Plus, Clock, ExternalLink, CheckCircle2, Building, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import useJobStore from '../store/useJobStore';
+import useAuthStore from '../store/useAuthStore';
 
 const JobBoardPage = () => {
-  const [jobs, setJobs] = useState(initialJobs);
-  const [activeTab, setActiveTab] = useState('all');
+  const { jobs, isLoading, error, loadJobs, createJob, toggleApply } = useJobStore();
+  const { user } = useAuthStore();
 
-  const [newTitle, setNewTitle] = useState('');
-  const [newOrg, setNewOrg] = useState('');
-  const [newCategory, setNewCategory] = useState('Government');
-  const [newDeadline, setNewDeadline] = useState('');
-  const [newPosts, setNewPosts] = useState('');
-  const [newLink, setNewLink] = useState('');
+  // সার্চ ও ফিল্টার স্টেট
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const calculateDaysLeft = (deadlineStr) => {
-    const today = new Date();
-    const deadlineDate = new Date(deadlineStr);
-    const diffTime = deadlineDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return { text: "Expired (সময় শেষ)", status: "expired" };
-    if (diffDays === 0) return { text: "আজই শেষ দিন!", status: "urgent" };
-    if (diffDays <= 3) return { text: `আর মাত্র ${diffDays} দিন বাকি`, status: "urgent" };
-    return { text: `আর ${diffDays} দিন বাকি`, status: "normal" };
-  };
+  // নতুন সার্কুলার পোস্ট করার মডাল স্টেট
+  const [title, setTitle] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [category, setCategory] = useState('BCS');
+  const [vacancies, setVacancies] = useState(1);
+  const [deadline, setDeadline] = useState('');
+  const [applicationLink, setApplicationLink] = useState('');
+  const [description, setDescription] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
 
-  const handleStatusChange = (id, newStatus) => {
-    const updatedJobs = jobs.map((job) => 
-      job.id === id ? { ...job, status: newStatus } : job
-    );
-    setJobs(updatedJobs);
-  };
+  useEffect(() => {
+    loadJobs(searchTerm, selectedCategory);
+  }, [searchTerm, selectedCategory, loadJobs]);
 
-  const handleAddJob = (e) => {
+  // নতুন সার্কুলার সাবমিট হ্যান্ডলার
+  const handleCreateJob = async (e) => {
     e.preventDefault();
-    const newJobObj = {
-      id: Date.now(),
-      title: newTitle,
-      organization: newOrg,
-      category: newCategory,
-      deadline: newDeadline,
-      circularLink: newLink || "#",
-      posts: newPosts ? `${newPosts} জন` : "নির্ধারিত নয়",
-      status: "new"
-    };
+    setCreateError('');
 
-    setJobs([newJobObj, ...jobs]);
-    setNewTitle('');
-    setNewOrg('');
-    setNewDeadline('');
-    setNewPosts('');
-    setNewLink('');
-    document.getElementById('add_job_modal').close();
+    if (!title || !organization || !deadline || !applicationLink) {
+      setCreateError('অনুগ্রহ করে সকল বাধ্যতামূলক তথ্য প্রদান করুন।');
+      return;
+    }
+
+    setCreateLoading(true);
+    const result = await createJob({
+      title,
+      organization,
+      category,
+      vacancies,
+      deadline,
+      applicationLink,
+      description
+    });
+    setCreateLoading(false);
+
+    if (result.success) {
+      document.getElementById('create_job_modal').close();
+      setTitle(''); setOrganization(''); setDeadline(''); setApplicationLink(''); setDescription('');
+      alert('অভিনন্দন! চাকরির সার্কুলারটি সফলভাবে প্রকাশিত হয়েছে।');
+    } else {
+      setCreateError(result.message);
+    }
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    if (activeTab === 'applied') return job.status === 'applied';
-    if (activeTab === 'ignored') return job.status === 'ignored';
-    return job.status !== 'ignored';
-  });
+  // অ্যাপ্লাইড ট্র্যাকার হ্যান্ডলার
+  const handleToggleApply = async (jobId) => {
+    const result = await toggleApply(jobId);
+    if (result.success) {
+      alert(result.message);
+      loadJobs(searchTerm, selectedCategory); // স্টেট সিঙ্ক করার জন্য লিস্ট রিফ্রেশ
+    }
+  };
 
-  const appliedCount = jobs.filter(j => j.status === 'applied').length;
+  // ডেডলাইন কাউন্টডাউন ও স্ট্যাটাস বের করার হেল্পার ফাংশন
+  const getDeadlineStatus = (dateString) => {
+    const diffTime = new Date(dateString) - new Date();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { text: 'মেয়াদ শেষ', color: 'text-rose-600 bg-rose-50 border-rose-200', expired: true };
+    if (diffDays === 0) return { text: 'আজই শেষ দিন!', color: 'text-amber-600 bg-amber-50 border-amber-200 animate-pulse', expired: false };
+    if (diffDays <= 5) return { text: `আর মাত্র ${diffDays} দিন বাকি`, color: 'text-amber-600 bg-amber-50 border-amber-200', expired: false };
+    return { text: `${diffDays} দিন বাকি`, color: 'text-emerald-600 bg-emerald-50 border-emerald-200', expired: false };
+  };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f0f4f8] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* ================= HEADER & STATUS TABS ================= */}
-        <div className="neu-card p-6 border border-white/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <div className="p-2.5 rounded-xl neu-inset text-indigo-600">
-                <Briefcase className="w-6 h-6" />
-              </div>
-              <span>চাকরির খবর ও আবেদন ট্র্যাকার</span>
-            </h1>
-            <p className="text-sm text-slate-600">
-              গ্রুপ মেম্বারদের শেয়ার করা সকল নতুন সার্কুলার দেখুন এবং ডেডলাইনের পূর্বে আবেদন সম্পন্ন করুন।
-            </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      
+      {/* হেডার ব্যানার */}
+      <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 bg-white/40 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="space-y-2 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full neu-inset text-xs font-bold text-indigo-600 bg-white/50">
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>স্মার্ট জব ট্র্যাকার ও সার্কুলার হাব</span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <button 
-              onClick={() => setActiveTab('all')} 
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeTab === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'neu-btn text-slate-600 hover:text-indigo-600'
-              }`}
-            >
-              সকল সার্কুলার ({jobs.filter(j=>j.status !== 'ignored').length})
-            </button>
-            <button 
-              onClick={() => setActiveTab('applied')} 
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === 'applied' ? 'bg-emerald-600 text-white shadow-md' : 'neu-btn text-slate-600 hover:text-emerald-600'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>আমার আবেদন ({appliedCount})</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('ignored')} 
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeTab === 'ignored' ? 'bg-slate-800 text-white shadow-md' : 'neu-btn text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              আগ্রহী নই ({jobs.filter(j=>j.status === 'ignored').length})
-            </button>
-            <button 
-              onClick={() => document.getElementById('add_job_modal').showModal()}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl btn-glow text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 ml-auto md:ml-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>সার্কুলার যোগ করুন</span>
-            </button>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            সরকারি ও বেসরকারি চাকরির বিজ্ঞপ্তি
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
+            একই স্থানে সকল চাকরির আপডেট দেখুন, শেষ তারিখের কাউন্টডাউন ট্র্যাক করুন এবং আপনার আবেদন করা চাকরিগুলো এক ক্লিকে সংরক্ষণ করুন।
+          </p>
         </div>
 
-        {/* ================= JOBS GRID ================= */}
-        {filteredJobs.length === 0 ? (
-          <div className="neu-card p-16 text-center text-slate-400 border border-white/50 space-y-2">
-            <AlertCircle className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="font-semibold text-base">এই তালিকায় কোনো চাকরির সার্কুলার নেই।</p>
-            <p className="text-xs">উপরের বাটন থেকে নতুন সার্কুলার যোগ করুন।</p>
+        <button 
+          onClick={() => { setCreateError(''); document.getElementById('create_job_modal').showModal(); }}
+          className="px-6 py-3.5 rounded-2xl btn-glow font-bold text-sm text-white flex items-center gap-2 shadow-lg hover:scale-105 transition-all flex-shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>নতুন বিজ্ঞপ্তি পোস্ট করুন</span>
+        </button>
+      </div>
+
+      {/* সার্চ ও ফিল্টার বার */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 relative flex items-center">
+          <Search className="w-5 h-5 text-slate-400 absolute left-4 pointer-events-none" />
+          <input 
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="পদের নাম বা প্রতিষ্ঠান (যেমন: BPSC, বাংলাদেশ ব্যাংক) দিয়ে খুঁজুন..."
+            className="w-full pl-12 pr-4 py-3.5 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+          />
+        </div>
+
+        <div className="relative flex items-center">
+          <Filter className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
+          <select 
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full pl-11 pr-4 py-3.5 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+          >
+            <option value="All">সকল চাকরির ক্যাটাগরি</option>
+            <option value="BCS">BCS (বিসিএস)</option>
+            <option value="Bank Job">Bank Job (ব্যাংক জব)</option>
+            <option value="Primary & NTRCA">Primary & NTRCA (শিক্ষক নিয়োগ)</option>
+            <option value="Government">Government (অন্যান্য সরকারি)</option>
+            <option value="Other">Other (অন্যান্য)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* এরর বা লোডিং স্টেট */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-sm font-semibold flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3">
+          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">সার্কুলার লোড করা হচ্ছে...</span>
+        </div>
+      ) : jobs.length === 0 ? (
+        <div className="neu-card p-12 text-center rounded-3xl border border-white/80 space-y-4">
+          <div className="w-16 h-16 rounded-full neu-inset flex items-center justify-center text-slate-400 mx-auto">
+            <Briefcase className="w-8 h-8" />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredJobs.map((job) => {
-              const countdown = calculateDaysLeft(job.deadline);
-              const isExpired = countdown.status === 'expired';
-              const isApplied = job.status === 'applied';
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-lg text-slate-800">কোনো সার্কুলার পাওয়া যায়নি</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">আপনার অনুসন্ধানের সাথে মিলে এমন কোনো চাকরির বিজ্ঞপ্তি নেই। আপনি চাইলে নতুন একটি বিজ্ঞপ্তি পোস্ট করতে পারেন!</p>
+          </div>
+        </div>
+      ) : (
+        /* জব কার্ড গ্রিড */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {jobs.map((job) => {
+            const currentUserId = user?._id || user?.id;
+            const isApplied = job.appliedUsers?.some(id => (id?._id || id).toString() === currentUserId?.toString());
+            const deadlineInfo = getDeadlineStatus(job.deadline);
 
-              return (
-                <div 
-                  key={job.id} 
-                  className={`neu-card p-6 border transition-all duration-300 flex flex-col justify-between ${
-                    isApplied ? 'border-emerald-500/40 bg-gradient-to-br from-[#f0f4f8] to-emerald-50/30' : isExpired ? 'border-rose-300/40 opacity-70 bg-slate-200/40' : 'border-white/60 hover:-translate-y-1'
-                  }`}
-                >
-                  <div className="space-y-4">
-                    
-                    {/* Top Badges */}
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="px-3 py-1 rounded-full neu-inset text-indigo-600 font-bold text-[10px] uppercase tracking-wider">
-                        {job.category}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
-                        isExpired ? 'bg-rose-100 text-rose-700' : countdown.status === 'urgent' ? 'bg-amber-100 text-amber-800 animate-pulse' : 'neu-inset text-slate-600'
-                      }`}>
-                        <Clock className="w-3.5 h-3.5" />
-                        {countdown.text}
-                      </span>
-                    </div>
-
-                    {/* Title & Organization */}
-                    <div>
-                      <h2 className="text-lg font-bold text-slate-900 leading-snug line-clamp-2">{job.title}</h2>
-                      <p className="text-xs font-semibold text-slate-500 mt-1.5 flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                        <span className="truncate">{job.organization}</span>
-                      </p>
-                    </div>
-
-                    {/* Meta Info Box */}
-                    <div className="grid grid-cols-2 gap-3 text-xs neu-inset p-3.5 border border-white/40">
-                      <div>
-                        <span className="text-slate-400 font-semibold flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5 text-indigo-600" />
-                          শূন্যপদ:
-                        </span>
-                        <p className="font-bold text-slate-800 mt-0.5">{job.posts}</p>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 font-semibold flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                          শেষ তারিখ:
-                        </span>
-                        <p className={`font-bold mt-0.5 ${isExpired ? 'text-rose-600' : 'text-slate-800'}`}>{job.deadline}</p>
-                      </div>
-                    </div>
-
-                    {/* Applied Status Banner */}
-                    {isApplied && (
-                      <div className="bg-emerald-100/80 text-emerald-800 p-2.5 rounded-xl text-center text-xs font-bold flex items-center justify-center gap-1.5 border border-emerald-200">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>আবেদন সম্পন্ন করা হয়েছে</span>
-                      </div>
-                    )}
-
+            return (
+              <div key={job._id} className="neu-card p-6 sm:p-7 rounded-3xl border border-white/80 bg-white/30 flex flex-col justify-between space-y-6 hover:shadow-lg transition-all group">
+                <div className="space-y-4">
+                  
+                  {/* কার্ড হেডার: ক্যাটাগরি ও ডেডলাইন ব্যাজ */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-xl neu-inset text-[11px] font-extrabold text-indigo-600 bg-white/60">
+                      {job.category}
+                    </span>
+                    <span className={`px-3 py-1 rounded-xl text-[11px] font-extrabold border flex items-center gap-1.5 ${deadlineInfo.color}`}>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{deadlineInfo.text}</span>
+                    </span>
                   </div>
 
-                  {/* Actions Bar */}
-                  <div className="flex items-center justify-between pt-4 mt-6 border-t border-slate-200/60">
-                    <a 
-                      href={job.circularLink} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-                    >
-                      <span>সার্কুলার দেখুন</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                  {/* পদ ও প্রতিষ্ঠানের নাম */}
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-lg sm:text-xl text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                      {job.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm font-bold text-slate-600 flex items-center gap-1.5">
+                      <Building className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                      <span className="truncate">{job.organization}</span>
+                    </p>
+                  </div>
 
-                    <div className="flex gap-2">
-                      {!isApplied && !isExpired && (
-                        <>
-                          <button 
-                            onClick={() => handleStatusChange(job.id, 'ignored')} 
-                            className="px-3 py-1.5 rounded-lg neu-btn text-xs font-semibold text-slate-600 hover:text-slate-900"
-                            title="তালিকা থেকে সরান"
-                          >
-                            Not Now
-                          </button>
-                          <button 
-                            onClick={() => handleStatusChange(job.id, 'applied')} 
-                            className="px-3.5 py-1.5 rounded-lg btn-glow text-xs font-bold flex items-center gap-1"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Mark Applied</span>
-                          </button>
-                        </>
-                      )}
+                  {/* বিবরণ ও পদসংখ্যা */}
+                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                    {job.description}
+                  </p>
 
-                      {isApplied && (
-                        <button 
-                          onClick={() => handleStatusChange(job.id, 'new')} 
-                          className="px-3 py-1.5 rounded-lg neu-btn text-xs font-semibold text-slate-600 hover:text-amber-600 flex items-center gap-1"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Undo</span>
-                        </button>
-                      )}
-                      
-                      {job.status === 'ignored' && (
-                        <button 
-                          onClick={() => handleStatusChange(job.id, 'new')} 
-                          className="px-3 py-1.5 rounded-lg neu-btn text-xs font-semibold text-slate-600 hover:text-indigo-600 flex items-center gap-1"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>তালিকায় ফেরান</span>
-                        </button>
-                      )}
-                    </div>
+                  <div className="pt-2 flex items-center gap-4 text-xs font-bold text-slate-600">
+                    <span className="flex items-center gap-1 bg-white/50 px-3 py-1.5 rounded-xl neu-inset">
+                      <Users className="w-3.5 h-3.5 text-indigo-600" /> পদসংখ্যা: {job.vacancies} জন
+                    </span>
+                    <span className="flex items-center gap-1 bg-white/50 px-3 py-1.5 rounded-xl neu-inset">
+                      <Calendar className="w-3.5 h-3.5 text-indigo-600" /> শেষ: {new Date(job.deadline).toLocaleDateString('bn-BD')}
+                    </span>
                   </div>
 
                 </div>
-              );
-            })}
-          </div>
-        )}
 
-      </div>
+                {/* কার্ড বাটন অ্যাকশন (আবেদন লিংক ও ট্র্যাকার টগল) */}
+                <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+                  <a
+                    href={job.applicationLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-3 rounded-2xl neu-btn text-xs font-extrabold text-slate-700 hover:text-indigo-600 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <span>সার্কুলার দেখুন / আবেদন</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
 
-      {/* ================= MODAL: ADD JOB CIRCULAR ================= */}
-      <dialog id="add_job_modal" className="modal backdrop-blur-sm">
-        <div className="modal-box neu-card p-6 border border-white/80 max-w-lg bg-[#f0f4f8]">
-          <h3 className="font-extrabold text-lg text-slate-900 border-b border-slate-200/60 pb-3 flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-indigo-600" />
-            <span>নতুন চাকরির সার্কুলার যোগ করুন</span>
-          </h3>
+                  <button
+                    onClick={() => handleToggleApply(job._id)}
+                    className={`px-4 py-3 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                      isApplied 
+                        ? 'neu-inset bg-emerald-50 text-emerald-600 border border-emerald-200/60' 
+                        : 'btn-glow text-white shadow-md hover:scale-[1.02]'
+                    }`}
+                    title={isApplied ? 'আবেদন তালিকা থেকে সরান' : 'আবেদন করেছি হিসেবে মার্ক করুন'}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">{isApplied ? 'আবেদন করেছি' : 'ট্র্যাক করুন'}</span>
+                  </button>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ================= MODAL: নতুন সার্কুলার পোস্ট ================= */}
+      <dialog id="create_job_modal" className="modal backdrop-blur-sm">
+        <div className="modal-box neu-card p-6 sm:p-8 border border-white/80 max-w-lg bg-[#f0f4f8]">
           
-          <form onSubmit={handleAddJob} className="space-y-4 mt-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-600 block mb-1">পদের নাম (Job Title)</label>
-              <input type="text" placeholder="যেমন: ৪৬তম বিসিএস বা সহকারী জেনারেল ম্যানেজার" className="w-full px-3.5 py-2 neu-inset rounded-xl text-sm focus:outline-none" value={newTitle} onChange={(e)=>setNewTitle(e.target.value)} required />
+          <div className="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
+            <div className="p-3 rounded-2xl neu-inset text-indigo-600">
+              <Briefcase className="w-6 h-6" />
             </div>
-
             <div>
-              <label className="text-xs font-semibold text-slate-600 block mb-1">প্রতিষ্ঠানের নাম</label>
-              <input type="text" placeholder="যেমন: বাংলাদেশ ব্যাংক বা সরকারি কর্ম কমিশন" className="w-full px-3.5 py-2 neu-inset rounded-xl text-sm focus:outline-none" value={newOrg} onChange={(e)=>setNewOrg(e.target.value)} required />
+              <h3 className="font-extrabold text-xl text-slate-900">নতুন চাকরির বিজ্ঞপ্তি পোস্ট করুন</h3>
+              <p className="text-xs text-slate-500">অন্যান্য চাকরিপ্রার্থীদের সাথে নতুন সার্কুলারের তথ্য শেয়ার করুন</p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">ক্যাটাগরি</label>
-                <select className="w-full px-3 py-2 neu-inset rounded-xl text-sm focus:outline-none" value={newCategory} onChange={(e)=>setNewCategory(e.target.value)}>
-                  <option value="Government / BCS">Government / BCS</option>
-                  <option value="Bank / Financial">Bank / Financial</option>
-                  <option value="Education / Teaching">Education / Teaching</option>
-                  <option value="Private / Corporate">Private / Corporate</option>
+          {createError && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{createError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateJob} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700 block ml-1">পদের নাম</label>
+                <input 
+                  type="text" 
+                  placeholder="যেমন: সহকারী পরিচালক বা সহকারী জজ"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700 block ml-1">প্রতিষ্ঠানের নাম</label>
+                <input 
+                  type="text" 
+                  placeholder="যেমন: বাংলাদেশ ব্যাংক বা BPSC"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block ml-1">ক্যাটাগরি</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-bold text-slate-800 cursor-pointer"
+                >
+                  <option value="BCS">BCS (বিসিএস)</option>
+                  <option value="Bank Job">Bank Job (ব্যাংক জব)</option>
+                  <option value="Primary & NTRCA">Primary & NTRCA (শিক্ষক)</option>
+                  <option value="Government">Government (অন্যান্য সরকারি)</option>
+                  <option value="Other">Other (অন্যান্য)</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">আবেদনের শেষ তারিখ (Deadline)</label>
-                <input type="date" className="w-full px-3 py-2 neu-inset rounded-xl text-sm font-semibold text-indigo-600 focus:outline-none" value={newDeadline} onChange={(e)=>setNewDeadline(e.target.value)} required />
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block ml-1">পদসংখ্যা (Vacancies)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={vacancies}
+                  onChange={(e) => setVacancies(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block ml-1">আবেদনের শেষ তারিখ</label>
+                <input 
+                  type="date" 
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block ml-1">অফিসিয়াল সার্কুলার লিংক</label>
+                <input 
+                  type="url" 
+                  placeholder="https://..."
+                  value={applicationLink}
+                  onChange={(e) => setApplicationLink(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800"
+                />
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700 block ml-1">সংক্ষিপ্ত বিবরণ ও শিক্ষাগত যোগ্যতা</label>
+                <textarea 
+                  rows="3"
+                  placeholder="শিক্ষাগত যোগ্যতা, বয়সসীমা বা আবেদনের ফি সম্পর্কে সংক্ষেপে লিখুন..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800 resize-none"
+                ></textarea>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">পদসংখ্যা (Posts)</label>
-                <input type="number" placeholder="যেমন: ১০২৬" className="w-full px-3.5 py-2 neu-inset rounded-xl text-sm focus:outline-none" value={newPosts} onChange={(e)=>setNewPosts(e.target.value)} />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1">সার্কুলার লিংক</label>
-                <input type="url" placeholder="https://..." className="w-full px-3.5 py-2 neu-inset rounded-xl text-sm focus:outline-none" value={newLink} onChange={(e)=>setNewLink(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200/60">
-              <button type="button" className="px-5 py-2 rounded-xl neu-btn text-xs font-semibold text-slate-600" onClick={()=>document.getElementById('add_job_modal').close()}>Cancel</button>
-              <button type="submit" className="px-6 py-2 rounded-xl btn-glow text-xs font-semibold">Save Circular</button>
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+              <button 
+                type="button" 
+                onClick={() => document.getElementById('create_job_modal').close()}
+                className="px-5 py-2.5 rounded-xl neu-btn text-xs font-bold text-slate-600"
+              >
+                বাতিল
+              </button>
+              <button 
+                type="submit" 
+                disabled={createLoading}
+                className="px-6 py-2.5 rounded-xl btn-glow text-xs font-bold text-white flex items-center gap-2 shadow-md disabled:opacity-50"
+              >
+                {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                <span>{createLoading ? 'পোস্ট হচ্ছে...' : 'বিজ্ঞপ্তি প্রকাশ করুন'}</span>
+              </button>
             </div>
           </form>
+
         </div>
       </dialog>
 

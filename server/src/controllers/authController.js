@@ -12,9 +12,9 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ name, email, password: hashedPassword });
 
-    res.status(201).json({ message: 'সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!' });
+    res.status(201).json({ message: 'সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে!' });
   } catch (error) {
-    res.status(500).json({ message: 'সার্ভার এরর হয়েছে।' });
+    res.status(500).json({ message: 'সার্ভার এরর হয়েছে।' });
   }
 };
 
@@ -25,11 +25,11 @@ exports.login = async (req, res) => {
 
     // ইউজার খুঁজে বের করা
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'ইউজার খুঁজে পাওয়া যায়নি।' });
+    if (!user) return res.status(400).json({ message: 'ইউজার খুঁজে পাওয়া যায়নি।' });
 
-    // পাসওয়ার্ড চেক করা
+    // পাসওয়ার্ড চেক করা
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'ভুল পাসওয়ার্ড!' });
+    if (!isMatch) return res.status(400).json({ message: 'ভুল পাসওয়ার্ড!' });
 
     // JWT টোকেন জেনারেট করা
     const token = jwt.sign(
@@ -59,11 +59,52 @@ exports.getMe = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
 
     if (!user) {
-      return res.status(404).json({ message: 'ইউজার পাওয়া যায়নি।' });
+      return res.status(404).json({ message: 'ইউজার পাওয়া যায়নি।' });
     }
 
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: 'সার্ভার এরর।' });
+  }
+};
+
+// 4. ইউজারের প্রোফাইল তথ্য আপডেট করা (নতুন ফাংশন)
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { name, bio, phone, targetExam, education, profilePic } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'ইউজার পাওয়া যায়নি!' });
+    }
+
+    // তথ্যগুলো আপডেট করা হচ্ছে
+    user.name = name || user.name;
+    user.bio = bio !== undefined ? bio : user.bio;
+    user.phone = phone !== undefined ? phone : user.phone;
+    user.targetExam = targetExam || user.targetExam;
+    user.education = education !== undefined ? education : user.education;
+    if (profilePic) user.profilePic = profilePic;
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        bio: updatedUser.bio,
+        phone: updatedUser.phone,
+        targetExam: updatedUser.targetExam,
+        education: updatedUser.education,
+        profilePic: updatedUser.profilePic
+      },
+      message: 'প্রোফাইল সফলভাবে আপডেট হয়েছে!'
+    });
+  } catch (error) {
+    console.error('Profile Update Error:', error);
+    res.status(500).json({ success: false, message: 'প্রোফাইল আপডেট করার সময় সার্ভার এরর হয়েছে।' });
   }
 };
