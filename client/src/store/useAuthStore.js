@@ -1,108 +1,100 @@
 import { create } from 'zustand';
-import { registerUser, loginUser, getCurrentUser } from '../api/authApi';
-// axiosInstance ইম্পোর্ট করা হয়েছে (আপনার প্রোজেক্টের সঠিক পাথ অনুযায়ী মিলিয়ে নিন, যেমন: '../api/axios' হতে পারে)
-import axiosInstance from '../api/axiosInstance'; 
+import axiosInstance from '../api/axiosInstance';
 
-// লগইন বা চেক-অথ এর সময় ইউজারের ছবি না থাকলে অটোমেটিক তৈরি হবে
-const processUser = (userData) => {
-  if (!userData) return null; // সেফটি চেক
-  return {
-    ...userData,
-    profilePic:
-      userData.profilePic ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        userData.name || 'User'
-      )}&background=6366f1&color=fff&bold=true&size=128`,
-  };
+// LocalStorage থেকে আগের লগইন করা ডেটা লোড করার হেল্পার
+const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getStoredToken = () => {
+  return localStorage.getItem('token') || null;
 };
 
 const useAuthStore = create((set) => ({
-  user: null,
-  token: localStorage.getItem('token') || null,
+  user: getStoredUser(),
+  token: getStoredToken(),
   isLoading: false,
   error: null,
 
-  // ১. সাইনআপ অ্যাকশন
-  signup: async (name, email, password) => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await registerUser({ name, email, password });
-      set({ isLoading: false });
-      return { success: true, message: data.message };
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে!';
-      set({ isLoading: false, error: errorMessage });
-      return { success: false, message: errorMessage };
-    }
-  },
-
-  // ২. লগইন অ্যাকশন
-  login: async (email, password) => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await loginUser({ email, password });
-      // লোকাল স্টোরেজে টোকেন সেভ করা হচ্ছে
-      localStorage.setItem('token', data.token);
-      
-      // processUser কল করে user স্টেট আপডেট করা হলো
-      set({ user: processUser(data.user), token: data.token, isLoading: false });
-      return { success: true };
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || 'লগইন ব্যর্থ হয়েছে!';
-      set({ isLoading: false, error: errorMessage });
-      return { success: false, message: errorMessage };
-    }
-  },
-
-  // ৩. প্রোফাইল লোড করার অ্যাকশন (অ্যাপ রিলোড দিলে যেন ইউজার লগইন থাকে)
+  // ১. পেজ রিলোড দিলে ইউজার লগইন আছে কিনা চেক করার ফাংশন (যেটা মিসিং ছিল!)
   checkAuth: async () => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (!token) {
-      set({ user: null });
+      set({ user: null, token: null });
       return;
     }
-    set({ isLoading: true });
     try {
-      const userData = await getCurrentUser();
-      
-      // processUser কল করে user স্টেট আপডেট করা হলো
-      set({ user: processUser(userData), isLoading: false });
-    } catch (err) {
-      console.error('টোকেন ভ্যালিড নয় বা মেয়াদ শেষ:', err);
+      const response = await axiosInstance.get('/auth/profile');
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      set({ user: response.data.user });
+    } catch (error) {
       localStorage.removeItem('token');
-      set({ user: null, token: null, isLoading: false });
+      localStorage.removeItem('user');
+      set({ user: null, token: null });
     }
   },
 
-  // ৪. প্রোফাইল আপডেট ফাংশন (নতুন যুক্ত করা হলো)
-  updateProfile: async (userData) => {
+  // ২. ইউজার রেজিস্ট্রেশন
+  register: async (userData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.put('/auth/profile', userData);
+      const response = await axiosInstance.post('/auth/register', userData);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      // processUser ব্যবহার করে ডেটা ফরম্যাট করা হলো যেন ডিফল্ট ছবির লজিক কাজ করে
-      const updatedUser = processUser(response.data.user);
-
-      // লোকাল স্টোরেজ ও স্টেট আপডেট করা হচ্ছে
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      set({ user: updatedUser, isLoading: false });
-      
+      set({ user: response.data.user, token: response.data.token, isLoading: false });
       return { success: true, message: response.data.message };
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'প্রোফাইল আপডেট ব্যর্থ হয়েছে!';
+      const errorMsg = err.response?.data?.message || 'রেজিস্ট্রেশন ব্যর্থ হয়েছে!';
       set({ isLoading: false, error: errorMsg });
       return { success: false, message: errorMsg };
     }
   },
 
-  // ৫. লগআউট অ্যাকশন
+  // ৩. ইউজার লগইন
+  login: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.post('/auth/login', { email, password });
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      set({ user: response.data.user, token: response.data.token, isLoading: false });
+      return { success: true, message: response.data.message };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'লগইন ব্যর্থ হয়েছে!';
+      set({ isLoading: false, error: errorMsg });
+      return { success: false, message: errorMsg };
+    }
+  },
+
+  // ৪. প্রোফাইল আপডেট
+  updateProfile: async (userData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.put('/auth/profile', userData);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      set({ user: response.data.user, isLoading: false });
+      return { success: true, message: response.data.message };
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'প্রোফাইল আপডেট ব্যর্থ হয়েছে!';
+      set({ isLoading: false, error: errorMsg });
+      return { success: false, message: errorMsg };
+    }
+  },
+
+  // ৫. লগআউট
   logout: () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // লগআউটের সময় ইউজার ডেটাও মুছে দেওয়া ভালো
+    localStorage.removeItem('user');
     set({ user: null, token: null });
-  },
+  }
 }));
 
 export default useAuthStore;

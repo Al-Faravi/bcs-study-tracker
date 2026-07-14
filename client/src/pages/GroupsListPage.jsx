@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, Plus, Search, Filter, ShieldCheck, ArrowRight, BookOpen, Lock, Globe, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import useGroupStore from '../store/useGroupStore';
 import useAuthStore from '../store/useAuthStore';
+import toast from 'react-hot-toast';
 
 const GroupsListPage = () => {
   const { groups, isLoading, error, loadGroups, createGroup, sendJoinRequest } = useGroupStore();
@@ -51,7 +52,8 @@ const GroupsListPage = () => {
       setName('');
       setDescription('');
       setIsPrivate(false);
-      alert('অভিনন্দন! আপনার স্টাডি গ্রুপটি সফলভাবে তৈরি হয়েছে।');
+      // ✅ ডিফল্ট alert পরিবর্তন করে টোস্ট মেসেজ ব্যবহার করা হয়েছে
+      toast.success('অভিনন্দন! নতুন স্টাডি গ্রুপ তৈরি হয়েছে।');
     } else {
       setCreateError(result.message);
     }
@@ -60,7 +62,13 @@ const GroupsListPage = () => {
   // জয়েন রিকোয়েস্ট হ্যান্ডলার
   const handleJoin = async (groupId) => {
     const result = await sendJoinRequest(groupId);
-    alert(result.message);
+    if (result.success) {
+      // ✅ সফলভাবে রিকোয়েস্ট পাঠানো হলে টোস্ট মেসেজ দেখাবে
+      toast.success('গ্রুপে জয়েন রিকোয়েস্ট পাঠানো হয়েছে। অ্যাডমিনের অনুমোদনের অপেক্ষা করুন!');
+    } else {
+      // রিকোয়েস্ট ব্যর্থ হলে এরর টোস্ট দেখাবে
+      toast.error(result.message || 'অনুরোধ পাঠানো সম্ভব হয়নি।');
+    }
   };
 
   return (

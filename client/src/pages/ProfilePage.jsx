@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Phone, BookOpen, Target, Edit3, Save, Camera, ShieldCheck, AlertCircle, Loader2, CheckCircle2, Award } from 'lucide-react';
+import { User, Mail, Phone, BookOpen, Target, Edit3, Save, Camera, ShieldCheck, AlertCircle, Loader2, CheckCircle2, Award, Calendar, Users } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 
 const ProfilePage = () => {
@@ -13,6 +13,8 @@ const ProfilePage = () => {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
   const [targetExam, setTargetExam] = useState('');
   const [education, setEducation] = useState('');
   const [profilePic, setProfilePic] = useState('');
@@ -25,13 +27,14 @@ const ProfilePage = () => {
       setName(user.name || '');
       setBio(user.bio || 'বিসিএস ও সরকারি চাকরির প্রস্তুতি নিচ্ছি।');
       setPhone(user.phone || '');
+      setDateOfBirth(user.dateOfBirth || '');
+      setGender(user.gender || '');
       setTargetExam(user.targetExam || 'BCS Preliminary');
       setEducation(user.education || '');
       setProfilePic(user.profilePic || '');
     }
   }, [user]);
 
-  // ছবি সিলেক্ট করে Base64 এ রূপান্তর করা
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -48,7 +51,6 @@ const ProfilePage = () => {
     reader.readAsDataURL(file);
   };
 
-  // প্রোফাইল সেভ হ্যান্ডলার
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSuccessMsg('');
@@ -57,6 +59,8 @@ const ProfilePage = () => {
       name,
       bio,
       phone,
+      dateOfBirth,
+      gender,
       targetExam,
       education,
       profilePic
@@ -132,7 +136,6 @@ const ProfilePage = () => {
               )}
             </div>
 
-            {/* ছবি আপলোড বাটন (শুধুমাত্র এডিট মোডে কাজ করবে) */}
             {isEditing && (
               <>
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
@@ -171,6 +174,18 @@ const ProfilePage = () => {
               <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
               <span>{phone || 'ফোন নম্বর নেই'}</span>
             </div>
+            {dateOfBirth && (
+              <div className="flex items-center gap-2.5 p-2.5 rounded-xl neu-inset bg-white/40">
+                <Calendar className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <span>জন্মতারিখ: {dateOfBirth}</span>
+              </div>
+            )}
+            {gender && (
+              <div className="flex items-center gap-2.5 p-2.5 rounded-xl neu-inset bg-white/40">
+                <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span>লিঙ্গ: {gender}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2.5 p-2.5 rounded-xl neu-inset bg-white/40">
               <Award className="w-4 h-4 text-amber-500 flex-shrink-0" />
               <span>ভূমিকা: <strong className="uppercase text-slate-800">{user.role}</strong></span>
@@ -204,7 +219,7 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* ইমেইল (পরিবর্তনযোগ্য নয়) */}
+              {/* ইমেইল */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block ml-1">ইমেইল অ্যাড্রেস (অপরিবর্তনযোগ্য)</label>
                 <div className="relative flex items-center">
@@ -234,6 +249,40 @@ const ProfilePage = () => {
                 </div>
               </div>
 
+              {/* জন্মতারিখ */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block ml-1">জন্মতারিখ (Date of Birth)</label>
+                <div className="relative flex items-center">
+                  <Calendar className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    disabled={!isEditing}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800 disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  />
+                </div>
+              </div>
+
+              {/* লিঙ্গ (Gender) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block ml-1">লিঙ্গ (Gender)</label>
+                <div className="relative flex items-center">
+                  <Users className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    disabled={!isEditing}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-bold text-slate-800 disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+                  >
+                    <option value="">নির্বাচন করুন</option>
+                    <option value="পুরুষ (Male)">পুরুষ (Male)</option>
+                    <option value="মহিলা (Female)">মহিলা (Female)</option>
+                    <option value="অন্যান্য (Other)">অন্যান্য (Other)</option>
+                  </select>
+                </div>
+              </div>
+
               {/* টার্গেট পরীক্ষা */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block ml-1">প্রধান টার্গেট পরীক্ষা</label>
@@ -256,12 +305,12 @@ const ProfilePage = () => {
 
               {/* শিক্ষাগত যোগ্যতা */}
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block ml-1">শিক্ষাগত যোগ্যতা বা প্রতিষ্ঠান</label>
+                <label className="text-xs font-bold text-slate-700 block ml-1">বিশ্ববিদ্যালয় বা কলেজের নাম (Academic Background)</label>
                 <div className="relative flex items-center">
                   <BookOpen className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="যেমন: B.Sc in CSE, ঢাকা বিশ্ববিদ্যালয়"
+                    placeholder="যেমন: ঢাকা বিশ্ববিদ্যালয় বা ঢাকা কলেজ"
                     value={education}
                     onChange={(e) => setEducation(e.target.value)}
                     disabled={!isEditing}
@@ -272,7 +321,7 @@ const ProfilePage = () => {
 
               {/* সংক্ষিপ্ত বায়ো */}
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block ml-1">নিজের সম্পর্কে সংক্ষিপ্ত বায়ো (Bio)</label>
+                <label className="text-xs font-bold text-slate-700 block ml-1">নিজের সম্পর্কে সংক্ষিপ্ত বায়ো (Bio)</label>
                 <textarea
                   rows="3"
                   placeholder="আপনার লক্ষ্য বা প্রস্তুতি সম্পর্কে সংক্ষেপে লিখুন..."
@@ -285,7 +334,7 @@ const ProfilePage = () => {
 
             </div>
 
-            {/* সেভ বাটন (শুধুমাত্র এডিট মোডে দেখাবে) */}
+            {/* সেভ বাটন */}
             {isEditing && (
               <div className="pt-4 border-t border-slate-200/60 flex justify-end gap-3 animate-fadeIn">
                 <button

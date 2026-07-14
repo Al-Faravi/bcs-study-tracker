@@ -10,6 +10,7 @@ import useAuthStore from '../store/useAuthStore';
 import ResourceHub from '../components/groups/ResourceHub';
 import GroupAnalytics from '../components/groups/GroupAnalytics';
 import GroupChatRoom from '../components/groups/GroupChatRoom';
+import toast from 'react-hot-toast';
 
 const GroupDashboard = () => {
   const { groupId } = useParams();
@@ -28,7 +29,7 @@ const GroupDashboard = () => {
     { id: 1, title: 'বাংলা সাহিত্য: প্রাচীন ও মধ্যযুগ রিভিশন', completed: true },
     { id: 2, title: 'ইংরেজি ব্যাকরণ: Subject-Verb Agreement প্র্যাকটিস', completed: false },
     { id: 3, title: 'গণিত: শতকরা ও লাভ-ক্ষতি বিগত সালের প্রশ্ন সমাধান', completed: false },
-    { id: 4, title: 'দৈনিক সাধারণ জ্ঞান (সাম্প্রতিক বিষয়াবলী) পড়া', completed: true },
+    { id: 4, title: 'দৈনিক সাধারণ জ্ঞান (সাম্প্রতিক বিষয়াবলী) পড়া', completed: true },
   ]);
 
   useEffect(() => {
@@ -41,9 +42,14 @@ const GroupDashboard = () => {
     setTargets(targets.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   };
 
+  // ✅ আপডেট করা স্মার্ট হ্যান্ডলার (react-hot-toast সহ)
   const onHandleRequest = async (userId, action) => {
     const result = await handleMemberRequest(groupId, userId, action);
-    alert(result.message);
+    if (result.success) {
+      toast.success(result.message || 'রিকোয়েস্ট সফলভাবে আপডেট হয়েছে!');
+    } else {
+      toast.error(result.message || 'রিকোয়েস্ট প্রসেস করা যায়নি!');
+    }
   };
 
   // ১. লোডিং স্টেট
@@ -102,7 +108,7 @@ const GroupDashboard = () => {
         <div className="space-y-2 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2 text-xs font-bold text-emerald-600">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>সক্রিয় স্টাডি সেশন চলছে</span>
+            <span>সক্রিয় স্টাডি সেশন চলছে</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{currentGroup.name}</h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl leading-relaxed">{currentGroup.description}</p>
@@ -138,7 +144,7 @@ const GroupDashboard = () => {
           }`}
         >
           <BookOpen className="w-3.5 h-3.5 inline mr-1.5" />
-          <span>ওভারভিউ ও নিয়মাবলী</span>
+          <span>ওভারভিউ ও নিয়মাবলী</span>
         </button>
         <button
           onClick={() => setActiveTab('syllabus')}
@@ -185,7 +191,7 @@ const GroupDashboard = () => {
             }`}
           >
             <Clock className="w-3.5 h-3.5 inline mr-1.5" />
-            <span>জয়েন রিকোয়েস্ট</span>
+            <span>জয়েন রিকোয়েস্ট</span>
             {currentGroup.joinRequests?.length > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-extrabold animate-bounce">
                 {currentGroup.joinRequests.length}
@@ -195,7 +201,7 @@ const GroupDashboard = () => {
         )}
       </div>
 
-      {/* ================= ট্যাব কন্টেন্ট এরিয়া ================= */}
+      {/* ================= ট্যাব কন্টেন্ট এরিয়া ================= */}
       
       {/* ১. ওভারভিউ ট্যাব */}
       {activeTab === 'overview' && (
@@ -203,10 +209,10 @@ const GroupDashboard = () => {
           <div className="md:col-span-2 neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
             <h3 className="text-base font-extrabold text-slate-800 border-b border-slate-200/60 pb-3">গ্রুপের লক্ষ্য ও গাইডলাইন</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              এই স্টাডি গ্রুপটি তৈরি করা হয়েছে নিয়মিত পড়াশোনা ট্র্যাক করার জন্য। প্রতিদিন সকালে আমাদের টার্গেট সেট করা হবে এবং রাতে প্রত্যেকে নিজের অগ্রগতি শেয়ার করব।
+              এই স্টাডি গ্রুপটি তৈরি করা হয়েছে নিয়মিত পড়াশোনা ট্র্যাক করার জন্য। প্রতিদিন সকালে আমাদের টার্গেট সেট করা হবে এবং রাতে প্রত্যেকে নিজের অগ্রগতি শেয়ার করব।
             </p>
             <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">গ্রুপের নিয়মাবলী:</h4>
+              <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">গ্রুপের নিয়মাবলী:</h4>
               <ul className="space-y-2 text-xs text-slate-600 font-medium">
                 {currentGroup.rules && currentGroup.rules.length > 0 ? (
                   currentGroup.rules.map((rule, idx) => (
@@ -217,8 +223,8 @@ const GroupDashboard = () => {
                   ))
                 ) : (
                   <>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> প্রতিদিন অন্তত ৪ ঘণ্টা পড়াশোনা নিশ্চিত করা।</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কুইজ ও মক টেস্টে সক্রিয় অংশগ্রহণ করা।</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> প্রতিদিন অন্তত ৪ ঘণ্টা পড়াশোনা নিশ্চিত করা।</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কুইজ ও মক টেস্টে সক্রিয় অংশগ্রহণ করা।</li>
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> কোনো সদস্যকে ব্যক্তিগত আক্রমণ বা স্প্যামিং না করা।</li>
                   </>
                 )}
@@ -233,15 +239,15 @@ const GroupDashboard = () => {
             </h3>
             <div className="space-y-3 text-xs font-semibold text-slate-600">
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>গ্রুপ তৈরি হয়েছে:</span>
+                <span>গ্রুপ তৈরি হয়েছে:</span>
                 <span className="font-extrabold text-slate-800">{new Date(currentGroup.createdAt).toLocaleDateString('bn-BD')}</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>মোট পড়ার টার্গেট:</span>
+                <span>মোট পড়ার টার্গেট:</span>
                 <span className="font-extrabold text-indigo-600">২৪ টি টপিক</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>গড় উপস্থিতি:</span>
+                <span>গড় উপস্থিতি:</span>
                 <span className="font-extrabold text-emerald-600">৯২%</span>
               </div>
             </div>
@@ -254,8 +260,8 @@ const GroupDashboard = () => {
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="flex justify-between items-center border-b border-slate-200/60 pb-4">
             <div>
-              <h3 className="font-extrabold text-lg text-slate-800">আজকের পড়ার টার্গেট (Daily Checklists)</h3>
-              <p className="text-xs text-slate-500">আপনার সম্পন্ন হওয়া টপিকগুলোতে টিক দিন এবং প্রস্তুতি এগিয়ে নিন</p>
+              <h3 className="font-extrabold text-lg text-slate-800">আজকের পড়ার টার্গেট (Daily Checklists)</h3>
+              <p className="text-xs text-slate-500">আপনার সম্পন্ন হওয়া টপিকগুলোতে টিক দিন এবং প্রস্তুতি এগিয়ে নিন</p>
             </div>
             <span className="px-3 py-1 rounded-full neu-inset text-xs font-extrabold text-indigo-600">
               {targets.filter(t => t.completed).length} / {targets.length} সম্পন্ন
@@ -336,18 +342,18 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ৬. জয়েন রিকোয়েস্ট ট্যাব (শুধুমাত্র অ্যাডমিনের জন্য) */}
+      {/* ৬. জয়েন রিকোয়েস্ট ট্যাব (শুধুমাত্র অ্যাডমিনের জন্য) */}
       {activeTab === 'requests' && isAdmin && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="border-b border-slate-200/60 pb-4">
-            <h3 className="font-extrabold text-lg text-slate-800">অপেক্ষমাণ সদস্য রিকোয়েস্ট</h3>
-            <p className="text-xs text-slate-500">যে সকল শিক্ষার্থীরা আপনার গ্রুপে যুক্ত হওয়ার জন্য আবেদন করেছে</p>
+            <h3 className="font-extrabold text-lg text-slate-800">অপেক্ষমাণ সদস্য রিকোয়েস্ট</h3>
+            <p className="text-xs text-slate-500">যে সকল শিক্ষার্থীরা আপনার গ্রুপে যুক্ত হওয়ার জন্য আবেদন করেছে</p>
           </div>
 
           {currentGroup.joinRequests?.length === 0 ? (
             <div className="py-12 text-center space-y-2">
               <UserCheck className="w-10 h-10 text-slate-300 mx-auto" />
-              <p className="text-xs font-bold text-slate-500">এই মুহূর্তে কোনো অপেক্ষমাণ জয়েন রিকোয়েস্ট নেই।</p>
+              <p className="text-xs font-bold text-slate-500">এই মুহূর্তে কোনো অপেক্ষমাণ জয়েন রিকোয়েস্ট নেই।</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -395,7 +401,7 @@ const GroupDashboard = () => {
       {/* ================= SMART FLOATING CHAT WIDGET (WHATSAPP STYLE) ============= */}
       {/* ========================================================================= */}
 
-      {/* ১. নিচের ডানকোণায় ভাসমান চ্যাট বাটন (Floating Action Button - FAB) */}
+      {/* ১. নিচের ডানকোণায় ভাসমান চ্যাট বাটন (Floating Action Button - FAB) */}
       {!isChatOpen && (
         <div className="fixed bottom-6 right-6 z-50">
           <button
@@ -437,7 +443,7 @@ const GroupDashboard = () => {
               <button 
                 onClick={() => setIsChatMinimized(!isChatMinimized)}
                 className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-all"
-                title={isChatMinimized ? "বড় করুন" : "ছোট করুন"}
+                title={isChatMinimized ? "বড় করুন" : "ছোট করুন"}
               >
                 {isChatMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
               </button>

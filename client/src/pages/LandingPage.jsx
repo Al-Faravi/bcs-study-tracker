@@ -4,6 +4,7 @@ import {
   Sparkles, TrendingUp, Users, Target, ShieldCheck, 
   ArrowRight, CheckCircle2, BarChart3, Clock, Award 
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const LandingPage = () => {
   return (

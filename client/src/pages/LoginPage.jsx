@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom'; // useLocation ইম্পোর্ট করা হয়েছে
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, ArrowRight, ShieldCheck, KeyRound, Send, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
+import toast from 'react-hot-toast'; // <-- ইতিমধ্যে ইম্পোর্ট করা আছে
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const LoginPage = () => {
   const [errorMsg, setErrorMsg] = useState('');
   
   const navigate = useNavigate();
-  const location = useLocation(); // লোকেশন হুক ইনিশিয়ালাইজ করা হয়েছে
+  const location = useLocation();
 
   // ইউজার আগে যে পেজে যেতে চেয়েছিল সেটি মনে রাখা হচ্ছে, না থাকলে ডিফল্টভাবে '/groups'-এ যাবে
   const from = location.state?.from?.pathname || '/groups';
@@ -29,6 +30,7 @@ const LoginPage = () => {
 
     if (!email || !password) {
       setErrorMsg('দয়া করে ইমেইল এবং পাসওয়ার্ড প্রদান করুন।');
+      toast.error('দয়া করে ইমেইল এবং পাসওয়ার্ড প্রদান করুন।'); // <-- টোস্ট নোটিফিকেশন
       return;
     }
 
@@ -36,10 +38,13 @@ const LoginPage = () => {
     const result = await login(email, password);
 
     if (result.success) {
+      toast.success('স্বাগতম! আপনি সফলভাবে লগইন করেছেন।'); // <-- সফল লগইনে সাকসেস টোস্ট
       // Smart Redirect: ইউজার যে পেজ দেখতে চেয়েছিল, লগইন শেষে সেখানেই চলে যাবে!
       navigate(from, { replace: true });
     } else {
-      setErrorMsg(result.message);
+      const fallbackError = result.message || 'ভুল ইমেইল অথবা পাসওয়ার্ড!';
+      setErrorMsg(fallbackError);
+      toast.error(fallbackError); // <-- ব্যর্থ লগইনে এরর টোস্ট
     }
   };
 
@@ -52,6 +57,7 @@ const LoginPage = () => {
     setTimeout(() => {
       setResetLoading(false);
       setIsResetSent(true);
+      toast.success('রিসেট লিংক সফলভাবে পাঠানো হয়েছে!'); // <-- রিসেট ইমেইল পাঠানোর পর সাকসেস টোস্ট
     }, 1000);
   };
 

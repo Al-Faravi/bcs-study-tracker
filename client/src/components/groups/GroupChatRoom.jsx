@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Send, Loader2, MessageSquare, ShieldCheck, User as UserIcon, Image as ImageIcon, Paperclip, Mic, Square, Download, FileText, X } from 'lucide-react';
 import io from 'socket.io-client';
+import toast from 'react-hot-toast'; // ✅ react-hot-toast ইম্পোর্ট করা হয়েছে
 import { fetchMessagesApi } from '../../api/messageApi';
 
 const SOCKET_SERVER_URL = 'http://localhost:5000';
@@ -15,7 +16,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
   const [filePreview, setFilePreview] = useState(null);
   const [fileType, setFileType] = useState('text'); // 'image' অথবা 'file'
   
-  // ভয়েস রেকর্ডিং স্টেট
+  // ভয়েস রেকর্ডিং স্টেট
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef(null);
@@ -65,9 +66,9 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // ৫ মেগাবাইটের বেশি ফাইল হলে সতর্ক করবে
+    // ৫ মেগাবাইটের বেশি ফাইল হলে সতর্ক করবে (স্মার্ট টোস্ট অ্যালার্ট)
     if (file.size > 5 * 1024 * 1024) {
-      alert('ফাইল সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে!');
+      toast.error('ফাইল সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে!'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
       return;
     }
 
@@ -93,7 +94,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
     setFileType('text');
   };
 
-  // ================= ভয়েস রেকর্ডিং হ্যান্ডলার =================
+  // ================= ভয়েস রেকর্ডিং হ্যান্ডলার =================
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -123,7 +124,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (err) {
-      alert('মাইক্রোফোন অ্যাক্সেস পাওয়া যায়নি! ব্রাউজারের পারমিশন চেক করুন।');
+      toast.error('মাইক্রোফোন অ্যাক্সেস পাওয়া যায়নি! ব্রাউজারের পারমিশন চেক করুন।'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
     }
   };
 
@@ -173,12 +174,12 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50/50 overflow-hidden relative">
       
-      {/* মেসেজ লিস্ট এরিয়া */}
+      {/* মেসেজ লিস্ট এরিয়া */}
       <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4 pr-2">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-2 opacity-70 my-12">
             <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="text-xs font-bold text-slate-500">এই চ্যাট রুমে এখনো কোনো কথা হয়নি।<br/>নোটস, ছবি বা ভয়েস মেসেজ পাঠিয়ে আলোচনা শুরু করুন!</p>
+            <p className="text-xs font-bold text-slate-500">এই চ্যাট রুমে এখনো কোনো কথা হয়নি।<br/>নোটস, ছবি বা ভয়েস মেসেজ পাঠিয়ে আলোচনা শুরু করুন!</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -206,7 +207,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
                     </span>
                   )}
 
-                  {/* ================= মেসেজ বাবল (টাইপ অনুযায়ী রেন্ডার) ================= */}
+                  {/* ================= মেসেজ বাবল (টাইপ অনুযায়ী রেন্ডার) ================= */}
                   <div className={`p-3.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed shadow-sm space-y-2 ${
                     isMe 
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-br-none' 
@@ -240,11 +241,11 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
                       </a>
                     )}
 
-                    {/* ৩. ভয়েস মেসেজ বা অডিও হলে */}
+                    {/* ৩. ভয়েস মেসেজ বা অডিও হলে */}
                     {msg.messageType === 'audio' && msg.fileUrl && (
                       <div className="flex flex-col gap-1 w-56 sm:w-64">
                         <span className="text-[10px] font-extrabold flex items-center gap-1 opacity-90">
-                          <Mic className="w-3 h-3 text-rose-400 animate-pulse" /> ভয়েস নোট
+                          <Mic className="w-3 h-3 text-rose-400 animate-pulse" /> ভয়েস নোট
                         </span>
                         <audio controls src={msg.fileUrl} className="w-full h-8 rounded-lg" />
                       </div>
@@ -273,7 +274,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
             {fileType === 'image' ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
             <span className="truncate max-w-xs">{selectedFile.name}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-200 text-indigo-800">সংযুক্ত হয়েছে</span>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-200 text-indigo-800">সংযুক্ত হয়েছে</span>
           </div>
           <button onClick={cancelAttachment} className="p-1 rounded-full hover:bg-rose-100 text-rose-600 transition-all">
             <X className="w-4 h-4" />
@@ -281,12 +282,12 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
         </div>
       )}
 
-      {/* ================= ভয়েস রেকর্ডিং ইন্ডিকেটর বার ================= */}
+      {/* ================= ভয়েস রেকর্ডিং ইন্ডিকেটর বার ================= */}
       {isRecording && (
         <div className="px-4 py-2.5 bg-rose-50 border-t border-rose-200 flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-2 text-xs font-extrabold text-rose-600">
             <span className="w-3 h-3 rounded-full bg-rose-600 animate-ping"></span>
-            <span>ভয়েস রেকর্ড হচ্ছে... ({recordingTime} সেকেন্ড)</span>
+            <span>ভয়েস রেকর্ড হচ্ছে... ({recordingTime} সেকেন্ড)</span>
           </div>
           <button onClick={stopRecording} className="px-3 py-1 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center gap-1 hover:bg-rose-700 shadow-sm">
             <Square className="w-3.5 h-3.5" />
@@ -332,7 +333,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
           className="flex-grow px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl neu-inset bg-slate-50 border border-slate-200/60 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50"
         />
 
-        {/* ভয়েস রেকর্ডিং বাটন (ইনপুট খালি থাকলে দেখাবে, কিছু লিখলে সেন্ড বাটন দেখাবে) */}
+        {/* ভয়েস রেকর্ডিং বাটন (ইনপুট খালি থাকলে দেখাবে, কিছু লিখলে সেন্ড বাটন দেখাবে) */}
         {!inputText.trim() && !selectedFile ? (
           <button
             type="button"
@@ -342,7 +343,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
                 ? 'bg-rose-600 text-white animate-bounce shadow-lg' 
                 : 'neu-inset bg-slate-50 text-slate-600 hover:text-rose-600 hover:bg-rose-50'
             }`}
-            title="ভয়েস মেসেজ পাঠাতে ক্লিক করুন"
+            title="ভয়েস মেসেজ পাঠাতে ক্লিক করুন"
           >
             {isRecording ? <Square className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>

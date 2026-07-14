@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Briefcase, Search, Filter, Plus, Clock, ExternalLink, CheckCircle2, Building, Users, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 import useJobStore from '../store/useJobStore';
 import useAuthStore from '../store/useAuthStore';
+import toast from 'react-hot-toast';
 
 const JobBoardPage = () => {
   const { jobs, isLoading, error, loadJobs, createJob, toggleApply } = useJobStore();
@@ -19,7 +20,6 @@ const JobBoardPage = () => {
   const [deadline, setDeadline] = useState('');
   const [applicationLink, setApplicationLink] = useState('');
   const [description, setDescription] = useState('');
-  const [createError, setCreateError] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
 
   useEffect(() => {
@@ -29,10 +29,10 @@ const JobBoardPage = () => {
   // নতুন সার্কুলার সাবমিট হ্যান্ডলার
   const handleCreateJob = async (e) => {
     e.preventDefault();
-    setCreateError('');
 
+    // ফর্ম ভ্যালিডেশন টোস্ট
     if (!title || !organization || !deadline || !applicationLink) {
-      setCreateError('অনুগ্রহ করে সকল বাধ্যতামূলক তথ্য প্রদান করুন।');
+      toast.error('অনুগ্রহ করে সকল বাধ্যতামূলক তথ্য প্রদান করুন।');
       return;
     }
 
@@ -50,10 +50,11 @@ const JobBoardPage = () => {
 
     if (result.success) {
       document.getElementById('create_job_modal').close();
+      // ফর্ম রিসেট
       setTitle(''); setOrganization(''); setDeadline(''); setApplicationLink(''); setDescription('');
-      alert('অভিনন্দন! চাকরির সার্কুলারটি সফলভাবে প্রকাশিত হয়েছে।');
+      toast.success('অভিনন্দন! চাকরির সার্কুলারটি সফলভাবে প্রকাশিত হয়েছে।');
     } else {
-      setCreateError(result.message);
+      toast.error(result.message || 'সার্কুলার যুক্ত করা যায়নি!');
     }
   };
 
@@ -61,8 +62,10 @@ const JobBoardPage = () => {
   const handleToggleApply = async (jobId) => {
     const result = await toggleApply(jobId);
     if (result.success) {
-      alert(result.message);
+      toast.success(result.message || 'ট্র্যাকিং আপডেট করা হয়েছে।');
       loadJobs(searchTerm, selectedCategory); // স্টেট সিঙ্ক করার জন্য লিস্ট রিফ্রেশ
+    } else {
+      toast.error(result.message || 'প্রক্রিয়াটি সম্পন্ন করা যায়নি।');
     }
   };
 
@@ -71,7 +74,7 @@ const JobBoardPage = () => {
     const diffTime = new Date(dateString) - new Date();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return { text: 'মেয়াদ শেষ', color: 'text-rose-600 bg-rose-50 border-rose-200', expired: true };
+    if (diffDays < 0) return { text: 'মেয়াদ শেষ', color: 'text-rose-600 bg-rose-50 border-rose-200', expired: true };
     if (diffDays === 0) return { text: 'আজই শেষ দিন!', color: 'text-amber-600 bg-amber-50 border-amber-200 animate-pulse', expired: false };
     if (diffDays <= 5) return { text: `আর মাত্র ${diffDays} দিন বাকি`, color: 'text-amber-600 bg-amber-50 border-amber-200', expired: false };
     return { text: `${diffDays} দিন বাকি`, color: 'text-emerald-600 bg-emerald-50 border-emerald-200', expired: false };
@@ -88,7 +91,7 @@ const JobBoardPage = () => {
             <span>স্মার্ট জব ট্র্যাকার ও সার্কুলার হাব</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            সরকারি ও বেসরকারি চাকরির বিজ্ঞপ্তি
+            सरकारी ও বেসরকারি চাকরির বিজ্ঞপ্তি
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
             একই স্থানে সকল চাকরির আপডেট দেখুন, শেষ তারিখের কাউন্টডাউন ট্র্যাক করুন এবং আপনার আবেদন করা চাকরিগুলো এক ক্লিকে সংরক্ষণ করুন।
@@ -96,7 +99,7 @@ const JobBoardPage = () => {
         </div>
 
         <button 
-          onClick={() => { setCreateError(''); document.getElementById('create_job_modal').showModal(); }}
+          onClick={() => document.getElementById('create_job_modal').showModal()}
           className="px-6 py-3.5 rounded-2xl btn-glow font-bold text-sm text-white flex items-center gap-2 shadow-lg hover:scale-105 transition-all flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -112,7 +115,7 @@ const JobBoardPage = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="পদের নাম বা প্রতিষ্ঠান (যেমন: BPSC, বাংলাদেশ ব্যাংক) দিয়ে খুঁজুন..."
+            placeholder="পদের নাম বা প্রতিষ্ঠান (যেমন: BPSC, বাংলাদেশ ব্যাংক) দিয়ে খুঁজুন..."
             className="w-full pl-12 pr-4 py-3.5 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
           />
         </div>
@@ -127,7 +130,7 @@ const JobBoardPage = () => {
             <option value="All">সকল চাকরির ক্যাটাগরি</option>
             <option value="BCS">BCS (বিসিএস)</option>
             <option value="Bank Job">Bank Job (ব্যাংক জব)</option>
-            <option value="Primary & NTRCA">Primary & NTRCA (শিক্ষক নিয়োগ)</option>
+            <option value="Primary & NTRCA">Primary & NTRCA (শিক্ষক নিয়োগ)</option>
             <option value="Government">Government (অন্যান্য সরকারি)</option>
             <option value="Other">Other (অন্যান্য)</option>
           </select>
@@ -153,7 +156,7 @@ const JobBoardPage = () => {
             <Briefcase className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <h3 className="font-extrabold text-lg text-slate-800">কোনো সার্কুলার পাওয়া যায়নি</h3>
+            <h3 className="font-extrabold text-lg text-slate-800">কোনো সার্কুলার পাওয়া যায়নি</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">আপনার অনুসন্ধানের সাথে মিলে এমন কোনো চাকরির বিজ্ঞপ্তি নেই। আপনি চাইলে নতুন একটি বিজ্ঞপ্তি পোস্ট করতে পারেন!</p>
           </div>
         </div>
@@ -249,16 +252,9 @@ const JobBoardPage = () => {
             </div>
             <div>
               <h3 className="font-extrabold text-xl text-slate-900">নতুন চাকরির বিজ্ঞপ্তি পোস্ট করুন</h3>
-              <p className="text-xs text-slate-500">অন্যান্য চাকরিপ্রার্থীদের সাথে নতুন সার্কুলারের তথ্য শেয়ার করুন</p>
+              <p className="text-xs text-slate-500">অন্যান্য চাকরিপ্রার্থীদের সাথে নতুন সার্কুলারের তথ্য শেয়ার করুন</p>
             </div>
           </div>
-
-          {createError && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              <span>{createError}</span>
-            </div>
-          )}
 
           <form onSubmit={handleCreateJob} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -325,7 +321,7 @@ const JobBoardPage = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 block ml-1">অফিসিয়াল সার্কুলার লিংক</label>
+                <label className="text-xs font-bold text-slate-700 block ml-1">অফিসিয়াল সার্কুলার লিংক</label>
                 <input 
                   type="url" 
                   placeholder="https://..."
@@ -337,10 +333,10 @@ const JobBoardPage = () => {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block ml-1">সংক্ষিপ্ত বিবরণ ও শিক্ষাগত যোগ্যতা</label>
+                <label className="text-xs font-bold text-slate-700 block ml-1">সংक्षिप्त বিবরণ ও শিক্ষাগত যোগ্যতা</label>
                 <textarea 
                   rows="3"
-                  placeholder="শিক্ষাগত যোগ্যতা, বয়সসীমা বা আবেদনের ফি সম্পর্কে সংক্ষেপে লিখুন..."
+                  placeholder="শিক্ষাগত যোগ্যতা, বয়সসীমা বা আবেদনের ফি সম্পর্কে সংক্ষেপে লিখুন..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required

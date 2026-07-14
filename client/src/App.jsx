@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast'; // <-- react-hot-toast ইম্পোর্ট করা হলো
 
 // State Store
 import useAuthStore from './store/useAuthStore';
@@ -7,7 +8,7 @@ import useAuthStore from './store/useAuthStore';
 // Common Components
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
-import ProtectedRoute from './routes/ProtectedRoute'; // <-- সঠিক ইম্পোর্ট পাথ
+import ProtectedRoute from './routes/ProtectedRoute';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -17,7 +18,7 @@ import GroupsListPage from './pages/GroupsListPage';
 import GroupDashboard from './pages/GroupDashboard';
 import JobBoardPage from './pages/JobBoardPage';
 import KnowledgeFeedPage from './pages/KnowledgeFeedPage';
-import ProfilePage from './pages/ProfilePage'; // <-- প্রোফাইল পেজ ইম্পোর্ট করা হলো
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -29,7 +30,45 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-[#f0f4f8] font-sans flex flex-col text-slate-800 antialiased">
+        
+        {/* স্মার্ট পপ-আপ নোটিফিকেশন কন্টেইনার (Neumorphic Style) */}
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          toastOptions={{
+            // আমাদের Neumorphic থিমের সাথে মানানসই গ্লাস ও শ্যাডো ডিজাইন
+            style: {
+              borderRadius: '16px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: '8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff',
+              color: '#1e293b',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              padding: '12px 20px',
+            },
+            // সাকসেস (সবুজ) নোটিফিকেশনের ডিজাইন
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10b981', // Emerald Color
+                secondary: 'white',
+              },
+            },
+            // এরর (লাল) নোটিফিকেশনের ডিজাইন
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#f43f5e', // Rose Color
+                secondary: 'white',
+              },
+            },
+          }}
+        />
+
         <Navbar />
+        
         <main className="flex-grow">
           <Routes>
             
@@ -90,6 +129,7 @@ function App() {
 
           </Routes>
         </main>
+        
         <Footer />
       </div>
     </Router>
