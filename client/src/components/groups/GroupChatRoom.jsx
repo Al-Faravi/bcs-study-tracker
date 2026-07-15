@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Send, Loader2, MessageSquare, ShieldCheck, User as UserIcon, Image as ImageIcon, Paperclip, Mic, Square, Download, FileText, X } from 'lucide-react';
 import io from 'socket.io-client';
-import toast from 'react-hot-toast'; // ✅ react-hot-toast ইম্পোর্ট করা হয়েছে
+import toast from 'react-hot-toast'; // ✅ react-hot-toast ইম্পোর্ট করা হয়েছে
 import { fetchMessagesApi } from '../../api/messageApi';
 
-const SOCKET_SERVER_URL = 'http://localhost:5000';
+// ✅ ডিপ্লয়ের জন্য ডায়নামিক Socket URL কনফিগারেশন (Vite Environment Variable ব্যবহার করে)
+const SOCKET_SERVER_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 const GroupChatRoom = ({ groupId, currentUser }) => {
   const [messages, setMessages] = useState([]);
@@ -45,7 +46,11 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
     };
     loadHistory();
 
-    socketRef.current = io(SOCKET_SERVER_URL);
+    // ✅ লাইভ সার্ভারের জন্য withCredentials: true সহ সকেট কানেক্ট করা হয়েছে
+    socketRef.current = io(SOCKET_SERVER_URL, {
+      withCredentials: true
+    });
+    
     socketRef.current.emit('join_group_room', groupId);
 
     socketRef.current.on('receive_message', (incomingMessage) => {
@@ -68,7 +73,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
 
     // ৫ মেগাবাইটের বেশি ফাইল হলে সতর্ক করবে (স্মার্ট টোস্ট অ্যালার্ট)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('ফাইল সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে!'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
+      toast.error('ফাইল সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে!'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
       return;
     }
 
@@ -124,7 +129,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (err) {
-      toast.error('মাইক্রোফোন অ্যাক্সেস পাওয়া যায়নি! ব্রাউজারের পারমিশন চেক করুন।'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
+      toast.error('মাইক্রোফোন অ্যাক্সেস পাওয়া যায়নি! ব্রাউজারের পারমিশন চেক করুন।'); // ✅ alert পরিবর্তন করে toast.error ব্যবহার করা হয়েছে
     }
   };
 
@@ -333,7 +338,7 @@ const GroupChatRoom = ({ groupId, currentUser }) => {
           className="flex-grow px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl neu-inset bg-slate-50 border border-slate-200/60 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50"
         />
 
-        {/* ভয়েস রেকর্ডিং বাটন (ইনপুট খালি থাকলে দেখাবে, কিছু লিখলে সেন্ড বাটন দেখাবে) */}
+        {/* ভয়েস রেকর্ডিং বাটন */}
         {!inputText.trim() && !selectedFile ? (
           <button
             type="button"

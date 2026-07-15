@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-// ব্যাকএন্ডের মূল URL (লোকাল ডেভেলপমেন্টের জন্য পোর্ট 5000)
-const API_URL = 'http://localhost:5000/api';
+// ✅ ডিপ্লয়ের জন্য ডায়নামিক API URL কনফিগারেশন (Vite Environment Variable ব্যবহার করে)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // ✅ CORS এর মাধ্যমে কুকি/টোকেন আদান-প্রদানের জন্য এটি অত্যন্ত গুরুত্বপূর্ণ
   headers: {
     'Content-Type': 'application/json',
   },

@@ -7,17 +7,21 @@ const { Server } = require('socket.io');
 const Message = require('./models/Message');
 const User = require('./models/User');
 
-// ডাটাবেস কানেক্ট
-connectDB();
+// ডাটাবেস কানেক্ট (বিঃদ্রঃ app.js-এও ডাটাবেস কানেক্ট করা আছে। যেকোনো এক জায়গায় রাখলেই কাজ করবে, তবে আপাতত আপনার কোডের মতোই রাখলাম)
+// connectDB(); // যদি app.js-এ কানেক্ট করা থাকে, তবে এখান থেকে রিমুভ করতে পারেন।
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-// Socket.io সেটআপ (CORS পলিসি সহ)
+// ✅ ডিপ্লয়ের জন্য ক্লায়েন্ট ইউআরএল ভেরিয়েবল
+const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
+
+// ✅ Socket.io সেটআপ (ডায়নামিক CORS পলিসি সহ)
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // আপনার ফ্রন্টএন্ড URL
-    methods: ["GET", "POST"]
+    origin: [clientURL, "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 

@@ -7,8 +7,15 @@ const app = express();
 // Database Connection
 connectDB();
 
-// Middleware (এখানে limit বাড়িয়ে 50MB করা হয়েছে যাতে বড় ছবি বা ফাইল আপলোডে এরর না আসে)
-app.use(cors());
+// ✅ ডিপ্লয়ের জন্য নতুন CORS কনফিগারেশন
+const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
+
+// Middleware (এখানে limit বাড়িয়ে 50MB করা হয়েছে যাতে বড় ছবি বা ফাইল আপলোডে এরর না আসে)
+app.use(cors({
+  origin: [clientURL, "http://localhost:5173"], // লোকাল এবং লাইভ দুটোই কাজ করবে
+  credentials: true
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
