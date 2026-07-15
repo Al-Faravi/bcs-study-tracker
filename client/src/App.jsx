@@ -73,6 +73,7 @@ function App() {
           <Routes>
             
             {/* ================= Public Routes (সবার জন্য উন্মুক্ত) ================= */}
+            {/* ক্লীন এবং স্মার্ট রাউট পাথ */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
