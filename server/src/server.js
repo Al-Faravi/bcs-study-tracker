@@ -7,6 +7,9 @@ const { Server } = require('socket.io');
 const Message = require('./models/Message');
 const User = require('./models/User');
 
+
+app.get('/', (req, res) => res.send('API is running...'));
+
 // ডাটাবেস কানেক্ট (বিঃদ্রঃ app.js-এও ডাটাবেস কানেক্ট করা আছে। যেকোনো এক জায়গায় রাখলেই কাজ করবে, তবে আপাতত আপনার কোডের মতোই রাখলাম)
 // connectDB(); // যদি app.js-এ কানেক্ট করা থাকে, তবে এখান থেকে রিমুভ করতে পারেন।
 

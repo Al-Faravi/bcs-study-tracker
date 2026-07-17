@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Users, BookOpen, CheckCircle2, Circle, Clock, ShieldCheck, 
   UserCheck, UserX, AlertCircle, Loader2, ArrowLeft, MessageSquare, 
-  Target, Award, Lock, Globe, FileText, BarChart2, X, Minimize2, Maximize2, Sparkles 
+  Target, Award, Lock, Globe, FileText, BarChart2, X, Minimize2, Maximize2, Sparkles, Plus, Calendar
 } from 'lucide-react';
 import useGroupStore from '../store/useGroupStore';
 import useAuthStore from '../store/useAuthStore';
@@ -11,6 +11,10 @@ import ResourceHub from '../components/groups/ResourceHub';
 import GroupAnalytics from '../components/groups/GroupAnalytics';
 import GroupChatRoom from '../components/groups/GroupChatRoom';
 import toast from 'react-hot-toast';
+
+// ✅ আমাদের তৈরি করা লাইভ API সার্ভিস ইম্পোর্ট
+// ✅ ফোল্ডারের নাম services থেকে বদলে api করা হয়েছে
+import { getTargets, createTarget, toggleTarget } from "../api/targetService";
 
 const GroupDashboard = () => {
   const { groupId } = useParams();
@@ -20,29 +24,96 @@ const GroupDashboard = () => {
   // ট্যাব নেভিগেশন স্টেট
   const [activeTab, setActiveTab] = useState('overview');
 
-  // স্মার্ট চ্যাট উইজেট স্টেট (WhatsApp/Messenger Style)
+  // স্মার্ট চ্যাট উইজেট স্টেট
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
 
-  // ডেমো স্টাডি টার্গেট
-  const [targets, setTargets] = useState([
-    { id: 1, title: 'বাংলা সাহিত্য: প্রাচীন ও মধ্যযুগ রিভিশন', completed: true },
-    { id: 2, title: 'ইংরেজি ব্যাকরণ: Subject-Verb Agreement প্র্যাকটিস', completed: false },
-    { id: 3, title: 'গণিত: শতকরা ও লাভ-ক্ষতি বিগত সালের প্রশ্ন সমাধান', completed: false },
-    { id: 4, title: 'দৈনিক সাধারণ জ্ঞান (সাম্প্রতিক বিষয়াবলী) পড়া', completed: true },
-  ]);
+  // ✅ লাইভ টার্গেট স্টেট (ডামি ডেটা বাদ!)
+  const [targets, setTargets] = useState([]);
+  const [loadingTargets, setLoadingTargets] = useState(false);
 
+  // ✅ নতুন টার্গেট তৈরির ফর্ম স্টেট
+  const [newTitle, setNewTitle] = useState('');
+  const [newSubject, setNewSubject] = useState('বাংলা');
+  const [newTopics, setNewTopics] = useState('');
+  const [creatingTarget, setCreatingTarget] = useState(false);
+
+  // পেজ লোড হলে গ্রুপ এবং টার্গেট ডেটা নিয়ে আসবে
   useEffect(() => {
     if (groupId) {
       loadGroupById(groupId);
+      fetchLiveTargets();
     }
   }, [groupId, loadGroupById]);
 
-  const toggleTarget = (id) => {
-    setTargets(targets.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  // ✅ ব্যাকএন্ড থেকে লাইভ টার্গেট লোড করার ফাংশন
+  const fetchLiveTargets = async () => {
+    try {
+      setLoadingTargets(true);
+      const data = await getTargets();
+      setTargets(data);
+    } catch (err) {
+      console.error('টার্গেট লোড করা যায়নি:', err);
+      toast.error('পড়ার টার্গেট লোড করতে সমস্যা হয়েছে!');
+    } finally {
+      setLoadingTargets(false);
+    }
   };
 
-  // ✅ আপডেট করা স্মার্ট হ্যান্ডলার (react-hot-toast সহ)
+  // ✅ নতুন টার্গেট তৈরি করার ফাংশন (অ্যাডমিন বা লিডারের জন্য)
+  const handleCreateTarget = async (e) => {
+    e.preventDefault();
+    if (!newTitle || !newTopics) {
+      toast.error('টাইটেল এবং টপিক অবশ্যই দিতে হবে!');
+      return;
+    }
+
+    try {
+      setCreatingTarget(true);
+      const topicsArray = newTopics.split(',').map(t => t.trim()).filter(Boolean);
+      
+      const newTargetData = await createTarget({
+        title: newTitle,
+        subject: newSubject,
+        topics: topicsArray,
+        date: new Date()
+      });
+
+      // নতুন টার্গেট লিস্টের শুরুতে যোগ করে দেওয়া
+      setTargets([newTargetData, ...targets]);
+      toast.success('আজকের নতুন টার্গেট সেট করা হয়েছে! 🎯');
+      
+      // ফর্ম রিসেট ও মডাল বন্ধ করা
+      setNewTitle('');
+      setNewTopics('');
+      document.getElementById('create_target_modal').close();
+    } catch (err) {
+      toast.error('টার্গেট তৈরি করা যায়নি!');
+    } finally {
+      setCreatingTarget(false);
+    }
+  };
+
+  // ✅ পড়া শেষ হলে প্রগ্রেস আপডেট (Toggle Completion)
+  const handleToggleTarget = async (id) => {
+    try {
+      const updatedTarget = await toggleTarget(id);
+      // স্টেট আপডেট করে নতুন ডেটা বসানো
+      setTargets(targets.map(t => t._id === id ? updatedTarget : t));
+      
+      const currentUserId = user?._id || user?.id;
+      const isNowCompleted = updatedTarget.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString());
+      
+      if (isNowCompleted) {
+        toast.success('অভিনন্দন! আপনার টার্গেট সম্পন্ন হয়েছে! 🎉');
+      } else {
+        toast('টার্গেট আনচেক করা হয়েছে।', { icon: 'ℹ️' });
+      }
+    } catch (err) {
+      toast.error('প্রগ্রেস আপডেট করা যায়নি!');
+    }
+  };
+
   const onHandleRequest = async (userId, action) => {
     const result = await handleMemberRequest(groupId, userId, action);
     if (result.success) {
@@ -52,7 +123,6 @@ const GroupDashboard = () => {
     }
   };
 
-  // ১. লোডিং স্টেট
   if (isLoading || !currentGroup) {
     if (error) {
       return (
@@ -77,10 +147,14 @@ const GroupDashboard = () => {
     );
   }
 
-  // নির্ভুল অ্যাডমিন চেক
   const currentUserId = user?._id || user?.id;
   const adminId = currentGroup.admin?._id || currentGroup.admin;
   const isAdmin = adminId?.toString() === currentUserId?.toString();
+
+  // ইউজার কতগুলো টার্গেট কমপ্লিট করেছে তার হিসাব
+  const myCompletedCount = targets.filter(t => 
+    t.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString())
+  ).length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative">
@@ -119,7 +193,6 @@ const GroupDashboard = () => {
           </div>
         </div>
 
-        {/* স্মার্ট চ্যাট টগল বাটন (হেডার থেকে ওপেন হবে) */}
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <button 
             onClick={() => { setIsChatOpen(true); setIsChatMinimized(false); }}
@@ -135,7 +208,7 @@ const GroupDashboard = () => {
         </div>
       </div>
 
-      {/* ট্যাব মেনু (Neumorphic Pills) */}
+      {/* ট্যাব মেনু */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 neu-inset rounded-2xl bg-white/40 border border-white/60 max-w-fit">
         <button
           onClick={() => setActiveTab('overview')}
@@ -148,12 +221,17 @@ const GroupDashboard = () => {
         </button>
         <button
           onClick={() => setActiveTab('syllabus')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
             activeTab === 'syllabus' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           <Target className="w-3.5 h-3.5 inline mr-1.5" />
           <span>দৈনিক টার্গেট ও সিলেবাস</span>
+          {targets.length > 0 && (
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'syllabus' ? 'bg-white text-indigo-600' : 'bg-indigo-100 text-indigo-600'}`}>
+              {targets.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab('resources')}
@@ -244,57 +322,137 @@ const GroupDashboard = () => {
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
                 <span>মোট পড়ার টার্গেট:</span>
-                <span className="font-extrabold text-indigo-600">২৪ টি টপিক</span>
+                <span className="font-extrabold text-indigo-600">{targets.length} টি টপিক</span>
               </div>
               <div className="flex justify-between p-3 rounded-xl neu-inset bg-white/40">
-                <span>গড় উপস্থিতি:</span>
-                <span className="font-extrabold text-emerald-600">৯২%</span>
+                <span>আমার সম্পন্ন:</span>
+                <span className="font-extrabold text-emerald-600">{myCompletedCount} টি ({targets.length > 0 ? Math.round((myCompletedCount / targets.length) * 100) : 0}%)</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ২. দৈনিক টার্গেট ও সিলেবাস ট্যাব */}
+      {/* ২. দৈনিক টার্গেট ও সিলেবাস ট্যাব (✅ সম্পূর্ণ লাইভ ডেটা দিয়ে আপডেট করা হয়েছে) */}
       {activeTab === 'syllabus' && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
-          <div className="flex justify-between items-center border-b border-slate-200/60 pb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-slate-200/60 pb-4">
             <div>
-              <h3 className="font-extrabold text-lg text-slate-800">আজকের পড়ার টার্গেট (Daily Checklists)</h3>
+              <h3 className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+                <span>আজকের পড়ার টার্গেট (Live Checklists)</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">Phase 2 Active 🚀</span>
+              </h3>
               <p className="text-xs text-slate-500">আপনার সম্পন্ন হওয়া টপিকগুলোতে টিক দিন এবং প্রস্তুতি এগিয়ে নিন</p>
             </div>
-            <span className="px-3 py-1 rounded-full neu-inset text-xs font-extrabold text-indigo-600">
-              {targets.filter(t => t.completed).length} / {targets.length} সম্পন্ন
-            </span>
+
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1.5 rounded-xl neu-inset text-xs font-extrabold text-indigo-600 bg-white/50">
+                {myCompletedCount} / {targets.length} আমার সম্পন্ন
+              </span>
+              
+              {/* নতুন টার্গেট সেট করার বাটন */}
+              <button
+                onClick={() => document.getElementById('create_target_modal').showModal()}
+                className="px-4 py-2 rounded-xl btn-glow text-xs font-bold text-white flex items-center gap-1.5 shadow-md hover:scale-105 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>নতুন টার্গেট সেট করুন</span>
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {targets.map((target) => (
-              <div 
-                key={target.id}
-                onClick={() => toggleTarget(target.id)}
-                className={`p-4 rounded-2xl transition-all cursor-pointer flex items-center justify-between border ${
-                  target.completed 
-                    ? 'neu-inset bg-emerald-50/40 border-emerald-200/60 text-slate-500 line-through' 
-                    : 'neu-card bg-white/40 border-white/80 text-slate-800 hover:border-indigo-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {target.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                  )}
-                  <span className="text-xs sm:text-sm font-bold">{target.title}</span>
-                </div>
-                <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-lg ${
-                  target.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600'
-                }`}>
-                  {target.completed ? 'সম্পন্ন' : 'চলমান'}
-                </span>
+          {/* লোডিং বা খালি অবস্থা */}
+          {loadingTargets ? (
+            <div className="py-12 text-center space-y-2">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
+              <p className="text-xs font-bold text-slate-500">লাইভ টার্গেট লোড হচ্ছে...</p>
+            </div>
+          ) : targets.length === 0 ? (
+            <div className="py-12 text-center neu-inset rounded-2xl p-6 bg-white/30 space-y-3">
+              <Target className="w-10 h-10 text-slate-400 mx-auto animate-bounce" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-extrabold text-slate-700">এখনো কোনো টার্গেট সেট করা হয়নি!</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">উপরের "নতুন টার্গেট সেট করুন" বাটনে ক্লিক করে আজকের পড়ার সিলেবাস ও টপিক যুক্ত করুন।</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            /* লাইভ টার্গেট লিস্ট */
+            <div className="space-y-3">
+              {targets.map((target) => {
+                const isCompletedByMe = target.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString());
+
+                return (
+                  <div 
+                    key={target._id}
+                    onClick={() => handleToggleTarget(target._id)}
+                    className={`p-4 sm:p-5 rounded-2xl transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${
+                      isCompletedByMe 
+                        ? 'neu-inset bg-emerald-50/50 border-emerald-300/80 text-slate-600' 
+                        : 'neu-card bg-white/60 border-white/90 text-slate-800 hover:border-indigo-400 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      {isCompletedByMe ? (
+                        <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <Circle className="w-6 h-6 text-slate-400 flex-shrink-0 mt-0.5 hover:text-indigo-600 transition-colors" />
+                      )}
+                      
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
+                            {target.subject}
+                          </span>
+                          <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(target.date).toLocaleDateString('bn-BD')}
+                          </span>
+                        </div>
+                        
+                        <h4 className={`text-sm sm:text-base font-extrabold ${isCompletedByMe ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                          {target.title}
+                        </h4>
+                        
+                        {/* টপিক ট্যাগসমূহ */}
+                        {target.topics && target.topics.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {target.topics.map((topic, idx) => (
+                              <span key={idx} className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/80 text-slate-600 border border-slate-200/60 shadow-2xs">
+                                # {topic}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/50">
+                      {/* কারা কমপ্লিট করেছে তাদের ছোট্ট অ্যাভাটার লিস্ট */}
+                      <div className="flex items-center -space-x-2 overflow-hidden" title="সম্পন্নকারী সদস্যগণ">
+                        {target.completedBy?.slice(0, 4).map((user, i) => (
+                          <div key={i} className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-indigo-100 text-indigo-600 font-extrabold text-[10px] flex items-center justify-center overflow-hidden">
+                            {user.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover" /> : user.name?.charAt(0) || 'U'}
+                          </div>
+                        ))}
+                        {target.completedBy?.length > 4 && (
+                          <span className="inline-flex items-center justify-center h-7 w-7 rounded-full ring-2 ring-white bg-slate-200 text-slate-700 text-[9px] font-bold">
+                            +{target.completedBy.length - 4}
+                          </span>
+                        )}
+                      </div>
+
+                      <span className={`text-xs font-extrabold px-3 py-1.5 rounded-xl transition-all ${
+                        isCompletedByMe ? 'bg-emerald-500 text-white shadow-sm' : 'neu-inset bg-white/80 text-slate-600 hover:text-indigo-600'
+                      }`}>
+                        {isCompletedByMe ? '✔ পড়া সম্পন্ন' : 'টিক দিন ⭕'}
+                      </span>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -396,12 +554,84 @@ const GroupDashboard = () => {
         </div>
       )}
 
+      {/* ================= MODAL: নতুন পড়ার টার্গেট তৈরি (Phase 2 Add-on) ================= */}
+      <dialog id="create_target_modal" className="modal backdrop-blur-sm">
+        <div className="modal-box neu-card p-6 sm:p-8 border border-white/80 max-w-lg bg-[#f0f4f8]">
+          <div className="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
+            <div className="p-3 rounded-2xl neu-inset text-indigo-600">
+              <Target className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-xl text-slate-900">নতুন পড়ার টার্গেট সেট করুন</h3>
+              <p className="text-xs text-slate-500">আজকের জন্য গ্রুপের সকল সদস্যদের পড়ার বিষয় ও টপিক নির্ধারণ করুন</p>
+            </div>
+          </div>
 
-      {/* ========================================================================= */}
-      {/* ================= SMART FLOATING CHAT WIDGET (WHATSAPP STYLE) ============= */}
-      {/* ========================================================================= */}
+          <form onSubmit={handleCreateTarget} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block ml-1">বিষয় (Subject)</label>
+              <select
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
+              >
+                <option value="বাংলা">বাংলা সাহিত্য ও ব্যাকরণ</option>
+                <option value="ইংরেজি">ইংরেজি (English Language & Literature)</option>
+                <option value="গণিত">গাণিতিক যুক্তি ও মানসিক দক্ষতা</option>
+                <option value="বাংলাদেশ বিষয়াবলী">বাংলাদেশ বিষয়াবলী</option>
+                <option value="আন্তর্জাতিক বিষয়াবলী">আন্তর্জাতিক বিষয়াবলী</option>
+                <option value="বিজ্ঞান ও আইসিটি">সাধারণ বিজ্ঞান ও আইসিটি</option>
+                <option value="অন্যান্য">অন্যান্য / রিভিশন</option>
+              </select>
+            </div>
 
-      {/* ১. নিচের ডানকোণায় ভাসমান চ্যাট বাটন (Floating Action Button - FAB) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block ml-1">টার্গেটের শিরোনাম (Title)</label>
+              <input 
+                type="text" 
+                placeholder="যেমন: বাংলা সাহিত্য: প্রাচীন ও মধ্যযুগ রিভিশন"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm text-slate-800 placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block ml-1">টপিকসমূহ (কমা দিয়ে আলাদা করুন)</label>
+              <textarea 
+                rows="3"
+                placeholder="যেমন: চর্যাপদ, শ্রীকৃষ্ণকীর্তন, বৈষ্ণব পদাবলী, মঙ্গলকাব্য..."
+                value={newTopics}
+                onChange={(e) => setNewTopics(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm text-slate-800 placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
+              ></textarea>
+              <span className="text-[10px] text-slate-400 block ml-1">💡 টিপস: একাধিক টপিক লেখার সময় কমা ( , ) ব্যবহার করুন।</span>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+              <button 
+                type="button" 
+                onClick={() => document.getElementById('create_target_modal').close()}
+                className="px-5 py-2.5 rounded-xl neu-btn text-xs font-bold text-slate-600"
+              >
+                বাতিল
+              </button>
+              <button 
+                type="submit" 
+                disabled={creatingTarget}
+                className="px-6 py-2.5 rounded-xl btn-glow text-xs font-bold text-white flex items-center gap-2 shadow-md disabled:opacity-50"
+              >
+                {creatingTarget ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                <span>{creatingTarget ? 'সেভ হচ্ছে...' : 'টার্গেট সেট করুন'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </dialog>
+
+      {/* ================= SMART FLOATING CHAT WIDGET ================= */}
       {!isChatOpen && (
         <div className="fixed bottom-6 right-6 z-50">
           <button
@@ -416,13 +646,11 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ২. চ্যাট উইজেট কন্টেইনার (মিনিমাইজ ও ম্যাক্সিমাইজ সাপোর্ট সহ) */}
       {isChatOpen && (
         <div className={`fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-[420px] z-50 transition-all duration-300 shadow-2xl ${
           isChatMinimized ? 'h-14 sm:rounded-2xl overflow-hidden' : 'h-[100vh] sm:h-[620px] sm:rounded-3xl'
         } neu-card border border-white/90 bg-white/80 backdrop-blur-xl flex flex-col`}>
           
-          {/* উইজেট টপ হেডার বার */}
           <div className="p-3.5 sm:p-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white flex items-center justify-between shadow-md cursor-pointer select-none"
                onClick={() => setIsChatMinimized(!isChatMinimized)}>
             <div className="flex items-center gap-2.5">
@@ -438,7 +666,6 @@ const GroupDashboard = () => {
               </div>
             </div>
 
-            {/* কন্ট্রোল বাটনসমূহ (Minimize & Close) */}
             <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => setIsChatMinimized(!isChatMinimized)}
@@ -457,7 +684,6 @@ const GroupDashboard = () => {
             </div>
           </div>
 
-          {/* উইজেট বডি (মিনিমাইজ করা না থাকলে কেবল চ্যাট রুম রেন্ডার হবে) */}
           {!isChatMinimized && (
             <div className="flex-grow overflow-hidden flex flex-col bg-[#f8fafc]/90">
               <GroupChatRoom groupId={groupId} currentUser={user} />
