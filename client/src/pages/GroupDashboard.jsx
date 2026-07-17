@@ -12,33 +12,28 @@ import GroupAnalytics from '../components/groups/GroupAnalytics';
 import GroupChatRoom from '../components/groups/GroupChatRoom';
 import toast from 'react-hot-toast';
 
-// ✅ আমাদের তৈরি করা লাইভ API সার্ভিস ইম্পোর্ট
-// ✅ ফোল্ডারের নাম services থেকে বদলে api করা হয়েছে
-import { getTargets, createTarget, toggleTarget } from "../api/targetService";
+// ✅ লাইভ API সার্ভিস ইম্পোর্ট
+import { getTargets, createTarget, toggleTarget } from '../api/targetService';
 
 const GroupDashboard = () => {
   const { groupId } = useParams();
   const { currentGroup, isLoading, error, loadGroupById, handleMemberRequest } = useGroupStore();
   const { user } = useAuthStore();
 
-  // ট্যাব নেভিগেশন স্টেট
   const [activeTab, setActiveTab] = useState('overview');
-
-  // স্মার্ট চ্যাট উইজেট স্টেট
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
 
-  // ✅ লাইভ টার্গেট স্টেট (ডামি ডেটা বাদ!)
+  // লাইভ টার্গেট স্টেট
   const [targets, setTargets] = useState([]);
   const [loadingTargets, setLoadingTargets] = useState(false);
 
-  // ✅ নতুন টার্গেট তৈরির ফর্ম স্টেট
+  // নতুন টার্গেট তৈরির ফর্ম স্টেট (ডিফল্ট বিষয় ১ নম্বরটা দেওয়া হয়েছে)
   const [newTitle, setNewTitle] = useState('');
-  const [newSubject, setNewSubject] = useState('বাংলা');
+  const [newSubject, setNewSubject] = useState('বাংলা ভাষা ও সাহিত্য');
   const [newTopics, setNewTopics] = useState('');
   const [creatingTarget, setCreatingTarget] = useState(false);
 
-  // পেজ লোড হলে গ্রুপ এবং টার্গেট ডেটা নিয়ে আসবে
   useEffect(() => {
     if (groupId) {
       loadGroupById(groupId);
@@ -46,7 +41,6 @@ const GroupDashboard = () => {
     }
   }, [groupId, loadGroupById]);
 
-  // ✅ ব্যাকএন্ড থেকে লাইভ টার্গেট লোড করার ফাংশন
   const fetchLiveTargets = async () => {
     try {
       setLoadingTargets(true);
@@ -60,7 +54,6 @@ const GroupDashboard = () => {
     }
   };
 
-  // ✅ নতুন টার্গেট তৈরি করার ফাংশন (অ্যাডমিন বা লিডারের জন্য)
   const handleCreateTarget = async (e) => {
     e.preventDefault();
     if (!newTitle || !newTopics) {
@@ -79,11 +72,9 @@ const GroupDashboard = () => {
         date: new Date()
       });
 
-      // নতুন টার্গেট লিস্টের শুরুতে যোগ করে দেওয়া
       setTargets([newTargetData, ...targets]);
       toast.success('আজকের নতুন টার্গেট সেট করা হয়েছে! 🎯');
       
-      // ফর্ম রিসেট ও মডাল বন্ধ করা
       setNewTitle('');
       setNewTopics('');
       document.getElementById('create_target_modal').close();
@@ -94,15 +85,20 @@ const GroupDashboard = () => {
     }
   };
 
-  // ✅ পড়া শেষ হলে প্রগ্রেস আপডেট (Toggle Completion)
+  // ✅ ফিক্সড: পড়া শেষ হলে প্রগ্রেস আপডেট (১০০% বুলেটপ্রুফ লজিক)
   const handleToggleTarget = async (id) => {
     try {
       const updatedTarget = await toggleTarget(id);
+      
       // স্টেট আপডেট করে নতুন ডেটা বসানো
-      setTargets(targets.map(t => t._id === id ? updatedTarget : t));
+      setTargets(targets.map(t => (t._id || t.id) === id ? updatedTarget : t));
       
       const currentUserId = user?._id || user?.id;
-      const isNowCompleted = updatedTarget.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString());
+      // আইডি স্ট্রিং আকারে মিলিয়ে দেখা হচ্ছে ইউজার লিস্টে আছে কিনা
+      const isNowCompleted = updatedTarget.completedBy?.some(u => {
+        const completedUserId = typeof u === 'object' ? (u._id || u.id) : u;
+        return completedUserId?.toString() === currentUserId?.toString();
+      });
       
       if (isNowCompleted) {
         toast.success('অভিনন্দন! আপনার টার্গেট সম্পন্ন হয়েছে! 🎉');
@@ -110,6 +106,7 @@ const GroupDashboard = () => {
         toast('টার্গেট আনচেক করা হয়েছে।', { icon: 'ℹ️' });
       }
     } catch (err) {
+      console.error(err);
       toast.error('প্রগ্রেস আপডেট করা যায়নি!');
     }
   };
@@ -151,9 +148,12 @@ const GroupDashboard = () => {
   const adminId = currentGroup.admin?._id || currentGroup.admin;
   const isAdmin = adminId?.toString() === currentUserId?.toString();
 
-  // ইউজার কতগুলো টার্গেট কমপ্লিট করেছে তার হিসাব
+  // ✅ ফিক্সড: ইউজার কতগুলো টার্গেট কমপ্লিট করেছে তার হিসাব
   const myCompletedCount = targets.filter(t => 
-    t.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString())
+    t.completedBy?.some(u => {
+      const completedUserId = typeof u === 'object' ? (u._id || u.id) : u;
+      return completedUserId?.toString() === currentUserId?.toString();
+    })
   ).length;
 
   return (
@@ -281,7 +281,6 @@ const GroupDashboard = () => {
 
       {/* ================= ট্যাব কন্টেন্ট এরিয়া ================= */}
       
-      {/* ১. ওভারভিউ ট্যাব */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
@@ -333,7 +332,7 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ২. দৈনিক টার্গেট ও সিলেবাস ট্যাব (✅ সম্পূর্ণ লাইভ ডেটা দিয়ে আপডেট করা হয়েছে) */}
+      {/* ২. দৈনিক টার্গেট ও সিলেবাস ট্যাব */}
       {activeTab === 'syllabus' && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-slate-200/60 pb-4">
@@ -350,7 +349,6 @@ const GroupDashboard = () => {
                 {myCompletedCount} / {targets.length} আমার সম্পন্ন
               </span>
               
-              {/* নতুন টার্গেট সেট করার বাটন */}
               <button
                 onClick={() => document.getElementById('create_target_modal').showModal()}
                 className="px-4 py-2 rounded-xl btn-glow text-xs font-bold text-white flex items-center gap-1.5 shadow-md hover:scale-105 transition-all"
@@ -361,7 +359,6 @@ const GroupDashboard = () => {
             </div>
           </div>
 
-          {/* লোডিং বা খালি অবস্থা */}
           {loadingTargets ? (
             <div className="py-12 text-center space-y-2">
               <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
@@ -376,15 +373,20 @@ const GroupDashboard = () => {
               </div>
             </div>
           ) : (
-            /* লাইভ টার্গেট লিস্ট */
             <div className="space-y-3">
               {targets.map((target) => {
-                const isCompletedByMe = target.completedBy?.some(u => (u._id || u).toString() === currentUserId?.toString());
+                const targetId = target._id || target.id;
+                
+                // ✅ ফিক্সড: ইউজার কমপ্লিট করেছে কিনা তার একদম নির্ভুল চেক
+                const isCompletedByMe = target.completedBy?.some(u => {
+                  const completedUserId = typeof u === 'object' ? (u._id || u.id) : u;
+                  return completedUserId?.toString() === currentUserId?.toString();
+                });
 
                 return (
                   <div 
-                    key={target._id}
-                    onClick={() => handleToggleTarget(target._id)}
+                    key={targetId}
+                    onClick={() => handleToggleTarget(targetId)}
                     className={`p-4 sm:p-5 rounded-2xl transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${
                       isCompletedByMe 
                         ? 'neu-inset bg-emerald-50/50 border-emerald-300/80 text-slate-600' 
@@ -413,7 +415,6 @@ const GroupDashboard = () => {
                           {target.title}
                         </h4>
                         
-                        {/* টপিক ট্যাগসমূহ */}
                         {target.topics && target.topics.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {target.topics.map((topic, idx) => (
@@ -427,11 +428,10 @@ const GroupDashboard = () => {
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/50">
-                      {/* কারা কমপ্লিট করেছে তাদের ছোট্ট অ্যাভাটার লিস্ট */}
                       <div className="flex items-center -space-x-2 overflow-hidden" title="সম্পন্নকারী সদস্যগণ">
                         {target.completedBy?.slice(0, 4).map((user, i) => (
                           <div key={i} className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-indigo-100 text-indigo-600 font-extrabold text-[10px] flex items-center justify-center overflow-hidden">
-                            {user.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover" /> : user.name?.charAt(0) || 'U'}
+                            {user.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover" /> : (user.name?.charAt(0) || 'U')}
                           </div>
                         ))}
                         {target.completedBy?.length > 4 && (
@@ -500,7 +500,7 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ৬. জয়েন রিকোয়েস্ট ট্যাব (শুধুমাত্র অ্যাডমিনের জন্য) */}
+      {/* ৬. জয়েন রিকোয়েস্ট ট্যাব */}
       {activeTab === 'requests' && isAdmin && (
         <div className="neu-card p-6 sm:p-8 rounded-3xl border border-white/80 space-y-6">
           <div className="border-b border-slate-200/60 pb-4">
@@ -554,7 +554,7 @@ const GroupDashboard = () => {
         </div>
       )}
 
-      {/* ================= MODAL: নতুন পড়ার টার্গেট তৈরি (Phase 2 Add-on) ================= */}
+      {/* ================= MODAL: নতুন পড়ার টার্গেট তৈরি (✅ বিসিএস-এর ১০টি রিয়েল সাবজেক্ট ড্রপডাউন সহ) ================= */}
       <dialog id="create_target_modal" className="modal backdrop-blur-sm">
         <div className="modal-box neu-card p-6 sm:p-8 border border-white/80 max-w-lg bg-[#f0f4f8]">
           <div className="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
@@ -563,25 +563,29 @@ const GroupDashboard = () => {
             </div>
             <div>
               <h3 className="font-extrabold text-xl text-slate-900">নতুন পড়ার টার্গেট সেট করুন</h3>
-              <p className="text-xs text-slate-500">আজকের জন্য গ্রুপের সকল সদস্যদের পড়ার বিষয় ও টপিক নির্ধারণ করুন</p>
+              <p className="text-xs text-slate-500">বিসিএস-এর সিলেবাস অনুযায়ী আজকের পড়ার বিষয় ও টপিক নির্ধারণ করুন</p>
             </div>
           </div>
 
           <form onSubmit={handleCreateTarget} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 block ml-1">বিষয় (Subject)</label>
+              <label className="text-xs font-bold text-slate-700 block ml-1">বিষয় (BCS Syllabus Subject)</label>
               <select
                 value={newSubject}
                 onChange={(e) => setNewSubject(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer"
               >
-                <option value="বাংলা">বাংলা সাহিত্য ও ব্যাকরণ</option>
-                <option value="ইংরেজি">ইংরেজি (English Language & Literature)</option>
-                <option value="গণিত">গাণিতিক যুক্তি ও মানসিক দক্ষতা</option>
-                <option value="বাংলাদেশ বিষয়াবলী">বাংলাদেশ বিষয়াবলী</option>
-                <option value="আন্তর্জাতিক বিষয়াবলী">আন্তর্জাতিক বিষয়াবলী</option>
-                <option value="বিজ্ঞান ও আইসিটি">সাধারণ বিজ্ঞান ও আইসিটি</option>
-                <option value="অন্যান্য">অন্যান্য / রিভিশন</option>
+                <option value="বাংলা ভাষা ও সাহিত্য">১. বাংলা ভাষা ও সাহিত্য (৩৫)</option>
+                <option value="ইংরেজি ভাষা ও সাহিত্য">২. ইংরেজি ভাষা ও সাহিত্য (৩৫)</option>
+                <option value="বাংলাদেশ বিষয়াবলি">৩. বাংলাদেশ বিষয়াবলি (৩০)</option>
+                <option value="আন্তর্জাতিক বিষয়াবলি">৪. আন্তর্জাতিক বিষয়াবলি (২০)</option>
+                <option value="ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা">৫. ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা (১০)</option>
+                <option value="সাধারণ বিজ্ঞান">৬. সাধারণ বিজ্ঞান (১৫)</option>
+                <option value="কম্পিউটার ও তথ্যপ্রযুক্তি">৭. কম্পিউটার ও তথ্যপ্রযুক্তি (১৫)</option>
+                <option value="গাণিতিক যুক্তি">৮. গাণিতিক যুক্তি (১৫)</option>
+                <option value="মানসিক দক্ষতা">৯. মানসিক দক্ষতা (১৫)</option>
+                <option value="নৈতিকতা, মূল্যবোধ ও সুশাসন">১০. নৈতিকতা, মূল্যবোধ ও সুশাসন (১০)</option>
+                <option value="অন্যান্য / রিভিশন">অন্যান্য / রিভিশন ও প্র্যাকটিস</option>
               </select>
             </div>
 
