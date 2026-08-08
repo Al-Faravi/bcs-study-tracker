@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import axios from 'axios'; // updateGroup এর জন্য axios ইম্পোর্ট করা হলো
 import { 
   createGroupApi, 
   fetchGroupsApi, 
@@ -75,6 +76,20 @@ const useGroupStore = create((set, get) => ({
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'অ্যাকশন সম্পন্ন হয়নি!';
       return { success: false, message: errorMsg };
+    }
+  },
+
+  // ৬. গ্রুপ আপডেট করার ফাংশন (রিসোর্স যোগ করার জন্য)
+  updateGroup: async (groupId, updateData) => {
+    try {
+      const response = await axios.put(`/api/groups/${groupId}`, updateData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      set({ currentGroup: response.data.group });
+      return response.data;
+    } catch (error) {
+      console.error('Update Group Error:', error);
+      throw error;
     }
   }
 }));
