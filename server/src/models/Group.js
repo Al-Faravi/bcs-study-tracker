@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const groupSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: [true, 'গ্রুপের নাম দেওয়া বাধ্যতামূলক'],
+    required: [true, 'গ্রুপের নাম দেওয়া বাধ্যতামূলক'],
     trim: true 
   },
   description: { 
     type: String, 
-    required: [true, 'গ্রুপের বিবরণ দেওয়া প্রয়োজন'] 
+    required: [true, 'গ্রুপের বিবরণ দেওয়া প্রয়োজন'] 
   },
   targetExam: { 
     type: String, 
@@ -38,7 +38,16 @@ const groupSchema = new mongoose.Schema({
   },
   rules: [{ 
     type: String 
+  }],
+  
+  // ✅ আমাদের নতুন Resources ফিল্ডটি এখানে যোগ করা হলো
+  resources: [{
+    title: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, enum: ['video', 'pdf', 'link'], default: 'link' },
+    addedAt: { type: Date, default: Date.now }
   }]
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('Group', groupSchema);
