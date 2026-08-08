@@ -21,7 +21,7 @@ const MockTestAnalytics = () => {
   const [quizResult, setQuizResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ নতুন কুইজ স্টেট (correctOptionIndex এবং explanation যোগ করা হয়েছে)
+  // ✅ নতুন কুইজ স্টেট (correctOptionIndex এবং explanation যোগ করা হয়েছে)
   const [newQuizTitle, setNewQuizTitle] = useState('');
   const [newQuizSubject, setNewQuizSubject] = useState('সাধারণ জ্ঞান');
   const [newQuizDuration, setNewQuizDuration] = useState(10);
@@ -109,7 +109,7 @@ const MockTestAnalytics = () => {
     try {
       setCreating(true);
       
-      // ✅ ব্যাকএন্ডে পাঠানোর আগে ডেটা সাজিয়ে নেওয়া
+      // ✅ ব্যাকএন্ডে পাঠানোর আগে ডেটা সাজিয়ে নেওয়া
       const formattedQuestions = questions.map(q => ({
         questionText: q.questionText,
         options: q.options,
@@ -428,9 +428,9 @@ const MockTestAnalytics = () => {
                         <input 
                           type="radio" name={`correct-${index}`}
                           checked={q.correctOptionIndex === oIndex}
-                          onChange={() => handleQuestionChange(index, 'correctOptionIndex', null, oIndex)}
+                          onChange={() => handleQuestionChange(index, 'correctOptionIndex', oIndex)} // 👈 এখানে পরিবর্তন করা হয়েছে
                           className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                          title="টিক দিয়ে সঠিক উত্তর হিসেবে মার্ক করুন"
+                          title="টিক দিয়ে সঠিক উত্তর হিসেবে মার্ক করুন"
                           required
                         />
                         <input 
