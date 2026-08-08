@@ -105,7 +105,7 @@ exports.handleJoinRequest = async (req, res) => {
       group.members.push(userId);
       group.joinRequests = group.joinRequests.filter(id => id.toString() !== userId);
       await group.save();
-      return res.status(200).json({ success: true, message: 'সদস্যকে গ্রুপে যুক্ত করা হয়েছে!' });
+      return res.status(200).json({ success: true, message: 'সদস্যকে গ্রুপ যুক্ত করা হয়েছে!' });
     } else if (action === 'reject') {
       group.joinRequests = group.joinRequests.filter(id => id.toString() !== userId);
       await group.save();
