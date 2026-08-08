@@ -22,7 +22,8 @@ const quizSchema = new mongoose.Schema({
     {
       questionText: { type: String, required: true },
       options: [{ type: String, required: true }], // ৪টি অপশন থাকবে
-      correctAnswer: { type: String, required: true } // সঠিক উত্তরটি এখানে থাকবে
+      correctAnswer: { type: String, required: true }, // সঠিক উত্তরটি এখানে থাকবে
+      explanation: { type: String, default: '' } // 👈 এই নতুন লাইনটা যোগ করা হলো
     }
   ],
   participants: [
