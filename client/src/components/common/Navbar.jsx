@@ -1,18 +1,20 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Users, Briefcase, MessageSquare, LogIn, UserPlus, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { BookOpen, Users, Briefcase, MessageSquare, LogIn, UserPlus, Menu, LogOut, User as UserIcon, Brain } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Zustand store থেকে ইউজার ডেটা এবং লগআউট ফাংশন নেওয়া হচ্ছে
+  // Zustand store থেকে ইউজার ডেটা এবং লগআউট ফাংশন নেওয়া হচ্ছে
   const { user, logout } = useAuthStore();
 
+  // ✅ এখানে নতুন "মক টেস্ট ও কুইজ" লিংকটি যোগ করা হয়েছে
   const navLinks = [
     { name: 'হোম', path: '/', icon: BookOpen },
     { name: 'স্টাডি গ্রুপ', path: '/groups', icon: Users },
+    { name: 'মক টেস্ট ও কুইজ', path: '/mock-test', icon: Brain },
     { name: 'জব বোর্ড', path: '/jobs', icon: Briefcase },
     { name: 'অভিজ্ঞতা ফোরাম', path: '/feed', icon: MessageSquare },
   ];
@@ -137,7 +139,7 @@ const Navbar = () => {
                 {user ? (
                   /* মোবাইল ডাইনামিক হেডার (লগইন থাকলে) */
                   <div className="px-3 py-2.5 border-b border-slate-200/60 mb-1 neu-inset rounded-xl bg-white/40">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">লগইন করা হয়েছে</span>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">লগইন করা হয়েছে</span>
                     <span className="text-xs font-extrabold text-slate-800 truncate block mt-0.5">{user.name}</span>
                     <span className="text-[10px] font-semibold text-slate-500 truncate block">{user.email}</span>
                   </div>

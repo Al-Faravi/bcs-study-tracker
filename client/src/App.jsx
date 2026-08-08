@@ -19,6 +19,7 @@ import GroupDashboard from './pages/GroupDashboard';
 import JobBoardPage from './pages/JobBoardPage';
 import KnowledgeFeedPage from './pages/KnowledgeFeedPage';
 import ProfilePage from './pages/ProfilePage';
+import MockTestAnalytics from './pages/MockTestAnalytics'; // <-- ১. ইম্পোর্ট করা হলো
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -124,6 +125,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* ৫. মক টেস্ট অ্যানালিটিক্স সেকশন (নতুন যোগ করা হলো) */}
+            <Route 
+              path="/mock-test" 
+              element={
+                <ProtectedRoute>
+                  <MockTestAnalytics />
                 </ProtectedRoute>
               } 
             />

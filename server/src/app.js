@@ -23,6 +23,7 @@ app.use('/api/groups', require('./routes/groupRoutes'));
 app.use('/api/jobs', require('./routes/jobRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/quizzes', require('./routes/quizRoutes'));
 
 // ✅ আমাদের নতুন টার্গেট রুট অবশ্যই এখানে (অন্য সব রুটের সাথে) থাকবে!
 app.use('/api/targets', require('./routes/targetRoutes'));
