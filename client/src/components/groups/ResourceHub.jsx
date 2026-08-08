@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
-  FileText, Youtube, Link as LinkIcon, Plus, Loader2, 
-  Trash2, ExternalLink, PlayCircle, BookOpen, X, Maximize2 
+  FileText, Video, Link as LinkIcon, Plus, Loader2, 
+  Trash2, ExternalLink, PlayCircle, BookOpen, X 
 } from 'lucide-react';
 import useGroupStore from '../../store/useGroupStore';
 import toast from 'react-hot-toast';
@@ -11,24 +11,20 @@ const ResourceHub = ({ isAdmin }) => {
   const { groupId } = useParams();
   const { currentGroup, updateGroup } = useGroupStore();
   
-  // স্টেটস
   const [resources, setResources] = useState(currentGroup?.resources || []);
   const [loading, setLoading] = useState(false);
-  const [viewingResource, setViewingResource] = useState(null); // ইন-অ্যাপ ভিউয়ারের জন্য
+  const [viewingResource, setViewingResource] = useState(null);
 
-  // নতুন রিসোর্স ফর্ম
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
-  const [type, setType] = useState('video'); // video, pdf, link
+  const [type, setType] = useState('video');
 
-  // কারেন্ট গ্রুপ আপডেট হলে রিসোর্সগুলো সিঙ্ক করা
   useEffect(() => {
     if (currentGroup?.resources) {
       setResources(currentGroup.resources);
     }
   }, [currentGroup]);
 
-  // নতুন রিসোর্স অ্যাড করা (শুধুমাত্র অ্যাডমিন)
   const handleAddResource = async (e) => {
     e.preventDefault();
     if (!title || !url) return toast.error('টাইটেল এবং লিংক দেওয়া বাধ্যতামূলক!');
@@ -38,14 +34,11 @@ const ResourceHub = ({ isAdmin }) => {
       const newResource = { title, url, type, addedAt: new Date() };
       const updatedResources = [...resources, newResource];
       
-      // Zustand store-এর আপডেট ফাংশন কল করা (তোমার ব্যাকএন্ডের API অনুযায়ী মানিয়ে নেবে)
-      // ধরে নিচ্ছি updateGroup ফাংশনটি পুরো গ্রুপ ডেটা আপডেট করতে পারে
       await updateGroup(groupId, { resources: updatedResources });
       
       setResources(updatedResources);
       toast.success('নতুন রিসোর্স যুক্ত করা হয়েছে!');
       
-      // ফর্ম রিসেট
       setTitle('');
       setUrl('');
       document.getElementById('add_resource_modal').close();
@@ -56,7 +49,6 @@ const ResourceHub = ({ isAdmin }) => {
     }
   };
 
-  // রিসোর্স ডিলিট করা
   const handleDelete = async (indexToDelete) => {
     if (!window.confirm('আপনি কি নিশ্চিত যে এই রিসোর্সটি মুছে ফেলতে চান?')) return;
     
@@ -70,12 +62,9 @@ const ResourceHub = ({ isAdmin }) => {
     }
   };
 
-  // ✅ ম্যাজিক ফাংশন: ইউটিউব এবং ড্রাইভ লিংকগুলোকে এমবেড (Embed) ফরমেটে কনভার্ট করা
   const getEmbedUrl = (resource) => {
     let finalUrl = resource.url;
-    
     if (resource.type === 'video') {
-      // ইউটিউব লিংক থেকে Video ID বের করে Embed লিংকে রূপান্তর
       let videoId = '';
       if (finalUrl.includes('youtube.com/watch?v=')) {
         videoId = finalUrl.split('v=')[1]?.split('&')[0];
@@ -85,7 +74,6 @@ const ResourceHub = ({ isAdmin }) => {
       if (videoId) finalUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     } 
     else if (resource.type === 'pdf') {
-      // গুগল ড্রাইভের ভিউ লিংককে প্রিভিউ লিংকে রূপান্তর
       if (finalUrl.includes('drive.google.com/file/d/')) {
         const fileId = finalUrl.split('/d/')[1].split('/')[0];
         finalUrl = `https://drive.google.com/file/d/${fileId}/preview`;
@@ -94,17 +82,14 @@ const ResourceHub = ({ isAdmin }) => {
     return finalUrl;
   };
 
-  // আইকন রেন্ডার হেল্পার
   const getResourceIcon = (type) => {
-    if (type === 'video') return <Youtube className="w-5 h-5 text-rose-500" />;
+    if (type === 'video') return <Video className="w-5 h-5 text-rose-500" />;
     if (type === 'pdf') return <FileText className="w-5 h-5 text-emerald-500" />;
     return <LinkIcon className="w-5 h-5 text-indigo-500" />;
   };
 
   return (
     <div className="space-y-6 relative">
-      
-      {/* হেডার অংশ */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-200/60 pb-4">
         <div>
           <h3 className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
@@ -127,12 +112,10 @@ const ResourceHub = ({ isAdmin }) => {
         )}
       </div>
 
-      {/* রিসোর্স লিস্ট */}
       {resources.length === 0 ? (
         <div className="py-12 text-center space-y-3 neu-inset rounded-2xl bg-white/30 border border-white/50">
           <BookOpen className="w-12 h-12 text-slate-300 mx-auto" />
           <h4 className="font-extrabold text-sm text-slate-600">কোনো রিসোর্স পাওয়া যায়নি!</h4>
-          {isAdmin && <p className="text-xs text-slate-500">উপরের বাটন থেকে লেকচার ভিডিও বা পিডিএফ যুক্ত করুন।</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,7 +134,6 @@ const ResourceHub = ({ isAdmin }) => {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* 🎯 ইন-অ্যাপ ভিউয়ার বাটন */}
                 {res.type !== 'link' ? (
                   <button 
                     onClick={() => setViewingResource(res)}
@@ -185,12 +167,10 @@ const ResourceHub = ({ isAdmin }) => {
         </div>
       )}
 
-      {/* ================= 🎬 IN-APP VIEWER OVERLAY ================= */}
       {viewingResource && (
         <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="bg-black w-full max-w-5xl h-[80vh] sm:h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-700 relative">
             
-            {/* ভিউয়ার হেডার */}
             <div className="px-4 py-3 bg-slate-800/80 flex items-center justify-between border-b border-slate-700">
               <div className="flex items-center gap-2.5 text-white">
                 {getResourceIcon(viewingResource.type)}
@@ -200,7 +180,6 @@ const ResourceHub = ({ isAdmin }) => {
                 <a 
                   href={viewingResource.url} target="_blank" rel="noopener noreferrer"
                   className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1"
-                  title="নতুন ট্যাবে খুলুন"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Open Original</span>
                 </a>
@@ -213,7 +192,6 @@ const ResourceHub = ({ isAdmin }) => {
               </div>
             </div>
 
-            {/* 🎬 আইফ্রেম (Iframe) প্লেয়ার */}
             <div className="flex-grow bg-slate-900 w-full h-full relative">
               <iframe
                 src={getEmbedUrl(viewingResource)}
@@ -223,12 +201,10 @@ const ResourceHub = ({ isAdmin }) => {
                 allowFullScreen
               ></iframe>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* ================= ➕ MODAL: নতুন রিসোর্স অ্যাড (Admin) ================= */}
       <dialog id="add_resource_modal" className="modal backdrop-blur-sm">
         <div className="modal-box neu-card p-6 sm:p-8 border border-white/80 max-w-md bg-[#f0f4f8]">
           <h3 className="font-extrabold text-xl text-slate-900 border-b border-slate-200/60 pb-4 mb-5 flex items-center gap-2">
@@ -265,7 +241,6 @@ const ResourceHub = ({ isAdmin }) => {
                 value={url} onChange={(e) => setUrl(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl neu-inset bg-white/50 border border-white/60 text-sm focus:outline-none"
               />
-              <span className="text-[10px] text-slate-500">💡 গুগল ড্রাইভের পিডিএফ লিংকের ক্ষেত্রে অবশ্যই 'Anyone with the link' (Viewer) অন করে দেবেন।</span>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
@@ -280,7 +255,6 @@ const ResourceHub = ({ isAdmin }) => {
           </form>
         </div>
       </dialog>
-
     </div>
   );
 };
